@@ -1,6 +1,6 @@
 import typing
 
-from query.type import boolean, equal_types
+from query.type import boolean, equal_types, numeric
 
 if typing.TYPE_CHECKING:
     from query.expr import Aggregation
@@ -72,3 +72,8 @@ class AggregateFunc(Function):
     def __call__(self, col, *group_by) -> 'Aggregation':
         from query.expr import Aggregation
         return Aggregation(func=self, col=col, group_by=group_by)
+
+    @classmethod
+    def NumericAggregateFunc(cls, name):
+        return AggregateFunc(name, input_type=equal_types(1),
+                             output_type=numeric)
