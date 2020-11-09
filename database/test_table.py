@@ -1,4 +1,4 @@
-from database.table import DatabaseColumn, DatabaseTable, Database
+from database.table import Database
 from query.type import numeric, boolean
 
 
@@ -13,6 +13,7 @@ def test_database_basic():
     assert db.tables == {'titanic': t}
     assert t.columns == {'Age': c}
 
+
 def test_database_with_schema():
     db = Database(name='default')
     t = db.add_table(name='titanic')
@@ -22,4 +23,3 @@ def test_database_with_schema():
     assert c1.schema() == 'numeric'
     assert c2.schema() == 'boolean'
     assert t.schema() == '{(Age: numeric), (Survived: boolean)}'
-

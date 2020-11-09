@@ -51,6 +51,9 @@ class DatabaseTable():
         sub_schema = [f'({i}: {v.schema()})' for i, v in self.columns.items()]
         return '{' + ', '.join(sub_schema) + '}'
 
+    def __getitem__(self, item):
+        return self.columns[item]
+
 
 class Database():
     def __init__(self, name):
@@ -64,3 +67,6 @@ class Database():
         table = DatabaseTable(name=name, database=self)
         self.tables[name] = table
         return table
+
+    def __getitem__(self, item):
+        return self.tables[item]
