@@ -33,3 +33,5 @@ min_ = AggregateFunc.NumericAggregateFunc('min')
 count_ = AggregateFunc.NumericAggregateFunc('count')
 sum_ = AggregateFunc.NumericAggregateFunc('sum')
 avg_ = AggregateFunc.NumericAggregateFunc('avg')
+
+all_aggregates = [max_, min_, count_, sum_, avg_]
