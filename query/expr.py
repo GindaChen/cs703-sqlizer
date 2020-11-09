@@ -20,15 +20,34 @@ Extended Relational Algebra
 from typing import List, Union
 
 from query.base import BaseExpr, AggregateFunc, Operator
+import query.operators as ops
 
 
 class Column(BaseExpr):
-    def __init__(self, col):
+    def __init__(self, col, type_=None):
         self.value = col
-
+        self.type_ = type_
 
     def __str__(self):
         return self.value
+
+    def __eq__(self, other):
+        return Predicate(ops.eq, self, other)
+
+    def __ne__(self, other):
+        return Predicate(ops.neg, (self == other))
+
+    def __gt__(self, other):
+        return Predicate(ops.gt, self, other)
+
+    def __ge__(self, other):
+        return Predicate(ops.ge, self, other)
+
+    def __lt__(self, other):
+        return Predicate(ops.lt, self, other)
+
+    def __le__(self, other):
+        return Predicate(ops.le, self, other)
 
 
 class Table(BaseExpr):
@@ -58,6 +77,15 @@ class Predicate(BaseExpr):
         self.func: Operator = func
         self.args = args
 
+    def and_(self, other):
+        return Predicate(ops.and_, self, other)
+
+    def or_(self, other):
+        return Predicate(ops.or_, self, other)
+
+    def not_(self):
+        return Predicate(ops.neg, self)
+
     def __str__(self):
         func = self.func.name
         arity = self.func.arity
@@ -67,6 +95,8 @@ class Predicate(BaseExpr):
         elif arity == 2:
             lhs, rhs = (str(i) for i in self.args)
             return f'({lhs} {func} {rhs})'
+
+
 
 
 class Projection(BaseExpr):
