@@ -7,7 +7,19 @@ if typing.TYPE_CHECKING:
 
 
 class BaseExpr():
-    pass
+    def __init__(self):
+        pass
+
+
+class Hint():
+    def __init__(self, hint=None):
+        self.hint = hint or []
+
+    def __str__(self):
+        if not self.hint:
+            return ''
+        hint_strs = ', '.join([str(i) for i in self.hint])
+        return '[' + hint_strs + ']'
 
 
 class BaseOperator():

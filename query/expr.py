@@ -19,17 +19,21 @@ Extended Relational Algebra
 """
 from typing import List, Union
 
-from query.base import BaseExpr, AggregateFunc, Operator
+from query.base import BaseExpr, AggregateFunc, Operator, Hint
 import query.operators as ops
 
 
 class Column(BaseExpr):
-    def __init__(self, col, type_=None):
+    def __init__(self, col=None, type_=None, hint=None):
+        super(Column, self).__init__()
         self.value = col
         self.type_ = type_
+        self.hint = Hint(hint=hint)
 
     def __str__(self):
-        return self.value
+        hint = str(self.hint)
+        cname = str(self.value) if self.value else '?'
+        return f'{cname}{hint}'
 
     def __eq__(self, other):
         return Predicate(ops.eq, self, other)
@@ -51,12 +55,20 @@ class Column(BaseExpr):
 
 
 class Table(BaseExpr):
-    def __init__(self, value):
+    def __init__(self, value=None, hint=None):
+        super().__init__()
         self.value: List[Column] = value
+        self.hint = Hint(hint=hint)
+
+    def __str__(self):
+        hint = str(self.hint)
+        tname = str(self.value) if self.value else '?'
+        return f'{tname}{hint}'
 
 
 class Aggregation(BaseExpr):
     def __init__(self, func, col: Column, group_by=None):
+        super().__init__()
         self.func: AggregateFunc = func
         self.col: Column = col
         self.group_by: List[Column] = group_by
@@ -95,8 +107,6 @@ class Predicate(BaseExpr):
         elif arity == 2:
             lhs, rhs = (str(i) for i in self.args)
             return f'({lhs} {func} {rhs})'
-
-
 
 
 class Projection(BaseExpr):
