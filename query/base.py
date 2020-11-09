@@ -77,3 +77,6 @@ class AggregateFunc(Function):
     def NumericAggregateFunc(cls, name):
         return AggregateFunc(name, input_type=equal_types(1),
                              output_type=numeric)
+
+    def __str__(self):
+        return self.name
