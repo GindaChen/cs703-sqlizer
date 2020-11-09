@@ -5,7 +5,7 @@ So when the
 
 
 class DatabaseColumn():
-    def __init__(self, name: str = None, table: 'DatabaseTable' = None):
+    def __init__(self, name: str, table: 'DatabaseTable'):
         self.cname = name or ""
         self.table: 'DatabaseTable' = table
         self.info = {}
@@ -13,9 +13,12 @@ class DatabaseColumn():
     @property
     def name(self) -> str:
         """Suppose the qualified name is <tname>.<cname>"""
-        tname = self.table.tname
+        tname = self.table.name
         cname = self.cname
         return f'{tname}.{cname}'
+
+    def __str__(self):
+        return self.name
 
 
 class DatabaseTable():
@@ -26,6 +29,9 @@ class DatabaseTable():
 
     @property
     def name(self) -> str:
+        return self.tname
+
+    def __str__(self):
         return self.name
 
 class Database():
