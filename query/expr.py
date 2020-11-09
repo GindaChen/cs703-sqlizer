@@ -17,18 +17,24 @@ Extended Relational Algebra
     lop := and | or | neg
     op  := < | <= | > | >= | =
 """
-from typing import List, Union
+from typing import List
 
-from query.base import BaseExpr, AggregateFunc, Operator, Hint
 import query.operators as ops
+from database.table import DatabaseColumn, DatabaseTable
+from query.base import BaseExpr, AggregateFunc, Operator, Hint
 
 
 class Column(BaseExpr):
-    def __init__(self, col=None, type_=None, hint=None):
+    def __init__(self, col=None, type_=None, hint=None, table=None):
         super(Column, self).__init__()
         self.value = col
         self.type_ = type_
+        self.table = table
         self.hint = Hint(hint=hint)
+
+    @property
+    def is_bound(self):
+        return isinstance(self.value, DatabaseColumn)
 
     def __str__(self):
         hint = str(self.hint)
@@ -59,11 +65,21 @@ class Table(BaseExpr):
         super().__init__()
         self.value: List[Column] = value
         self.hint = Hint(hint=hint)
+        self.columns = []
+
+    @property
+    def is_bound(self):
+        return isinstance(self.value, DatabaseTable)
 
     def __str__(self):
         hint = str(self.hint)
-        tname = str(self.value) if self.value else '?'
+        tname = str(self.value) if self.value else '??'
         return f'{tname}{hint}'
+
+    def add_column(self, col=None, type_=None, hint=None) -> Column:
+        c = Column(col=col, type_=type_, hint=hint, table=self)
+        self.columns.append(c)
+        return c
 
 
 class Aggregation(BaseExpr):
@@ -76,16 +92,17 @@ class Aggregation(BaseExpr):
     def __str__(self):
         # TODO: Can't just produce a SQL query from Aggregation...
         fn = self.func.name
-        c = self.col.value
+        c = str(self.col)
         g = ", ".join([str(i) for i in self.group_by])
         agg = f'{fn}({c})'
         if not g:
             return agg
-        return f'[{agg}, {g}]'
+        return f'<{agg}, {g}>'
 
 
 class Predicate(BaseExpr):
     def __init__(self, func, *args):
+        super().__init__()
         self.func: Operator = func
         self.args = args
 
@@ -111,12 +128,14 @@ class Predicate(BaseExpr):
 
 class Projection(BaseExpr):
     def __init__(self, table: Table, project_expr):
+        super().__init__()
         self.table = table
         self.expr = project_expr
 
 
 class Selection(BaseExpr):
     def __init__(self, table: Table, select_expr: List[Column]):
+        super().__init__()
         self.table = table
         self.expr = select_expr
 
@@ -124,6 +143,28 @@ class Selection(BaseExpr):
 class Join(BaseExpr):
     def __init__(self, lhs_table: Table, rhs_table: Table,
                  predicates: List[Predicate]):
+        super().__init__()
         self.lhs = lhs_table
         self.rhs = rhs_table
         self.on = predicates
+
+
+class QueryExpr():
+    """SQL expression builder"""
+
+    def __init__(self):
+        self.from_ = []
+        self.select = []
+        self.where = []
+        self.join = []
+        self.group_by = []
+        pass
+
+    def run(self, root):
+        pass
+
+    def to_sql(self):
+        pass
+
+    def __str__(self):
+        pass
