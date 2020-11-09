@@ -26,6 +26,7 @@ class DatabaseTable():
         self.tname = name
         self.database: 'Database' = database
         self.info = {}
+        self.columns = {}
 
     @property
     def name(self) -> str:
@@ -34,8 +35,25 @@ class DatabaseTable():
     def __str__(self):
         return self.name
 
+    def add_column(self, name):
+        if name in self.columns:
+            raise KeyError(f'Table {self.name} already have column {name}.')
+        column = DatabaseColumn(name=name, table=self)
+        self.columns[name] = column
+        return column
+
+
 class Database():
     def __init__(self, name):
         self.name = name
         self.info = {}
+        self.tables = {}
+
     pass
+
+    def add_table(self, name):
+        if name in self.tables:
+            raise KeyError(f'Database {self.name} already have table {name}.')
+        table = DatabaseTable(name=name, database=self)
+        self.tables[name] = table
+        return table
