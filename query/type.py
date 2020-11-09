@@ -3,14 +3,20 @@ class Type():
 
 
 class BooleanType(Type):
+    def __str__(self):
+        return 'boolean'
     pass
 
 
 class NumericType(Type):
+    def __str__(self):
+        return 'numeric'
     pass
 
 
 class StringType(Type):
+    def __str__(self):
+        return 'string'
     pass
 
 
