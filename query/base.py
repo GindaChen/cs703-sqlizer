@@ -1,4 +1,9 @@
+import typing
+
 from query.type import boolean, equal_types
+
+if typing.TYPE_CHECKING:
+    from query.expr import Aggregation
 
 
 class BaseExpr():
@@ -15,6 +20,14 @@ class Operator(BaseOperator):
         self.arity = arity
         self.input_type = input_type
         self.output_type = output_type
+
+    def __call__(self, *args, **kwargs):
+        from query.expr import Predicate
+        if len(args) != self.arity:
+            raise ValueError(
+                f'Expect operator {self.name} to have arity={self.arity}, '
+                f'got {len(args)}.')
+        return Predicate(self, *args)
 
     @classmethod
     def BinaryBoolean(cls, name):
@@ -55,3 +68,7 @@ class AggregateFunc(Function):
         self.name = name
         self.input_type = input_type
         self.output_type = output_type
+
+    def __call__(self, col, *group_by) -> 'Aggregation':
+        from query.expr import Aggregation
+        return Aggregation(func=self, col=col, group_by=group_by)
