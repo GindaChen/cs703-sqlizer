@@ -22,5 +22,8 @@ types = [boolean, numeric, string]
 
 
 def equal_types(n=2):
-    """Return the list of possible types."""
+    """Return the list of possible types for easy construction.
+    >>> equal_types(n=1) == [[boolean], [numeric], [string]]
+    >>> equal_types(n=2) == [[boolean, boolean], [numeric, numeric], [string, string]]
+    """
     return [[t] * n for t in types]
