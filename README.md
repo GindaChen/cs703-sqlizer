@@ -1,2 +1,3 @@
-# cs703-sqlizer
+# Sqlizer
+
 Replicate the SQLizer work
