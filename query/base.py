@@ -10,10 +10,15 @@ class BaseExpr():
     def __init__(self):
         pass
 
+    def __str__(self):
+        return self.unparse()
+
 
 class Hint():
     def __init__(self, hint=None):
         self.hint = hint or []
+        if isinstance(self.hint, str): # sugar: construct from a single string
+            self.hint = [self.hint]
 
     def __str__(self):
         if not self.hint:
