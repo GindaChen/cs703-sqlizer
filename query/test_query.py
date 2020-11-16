@@ -4,7 +4,8 @@ from database.default_db import construct_default_db
 from database.table import DatabaseTable
 from query.base import Hint
 from query.type import boolean, numeric, string
-from query.expr import Entity, AbstractTable, AbstractColumns, Value, Column, Table, GroupAgg, Aggregation, Predicate, Projection, Selection, Join
+from query.expr import Entity, AbstractTable, AbstractColumns, Value, Column, \
+    Table, GroupAgg, Aggregation, Predicate, Projection, Selection, Join
 import query.operators as ops
 
 

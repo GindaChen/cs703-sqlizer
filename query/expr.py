@@ -122,7 +122,7 @@ class Column(Entity):
     
     @property
     def isHole(self):
-        return self.col_name is None
+        return self.hint is not None # if this hole has no hint, it should at least have a Hint() with empty hint
     
     def unparse(self, indent=0):
         if self.isHole:
@@ -139,7 +139,7 @@ class Table(AbstractTable):
 
     @property
     def isHole(self):
-        return self.table_name is None
+        return self.hint is not None # if this hole has no hint, it should at least have a Hint() with empty hint
     
     def unparse(self, indent=0):
         if self.isHole:
