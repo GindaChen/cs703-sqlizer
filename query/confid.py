@@ -20,11 +20,15 @@ class BaseConfid():
 
     def __mul__(self, other):
         return BaseConfid.compose(self, other)
+    
+    # used by sort()
+    def __lt__(self, other):
+        return self.score < other.score
 
 
 # sim in Fig. 6
 class HintConfid(BaseConfid):
-    def __init__(self, hint: Hint, col: Column):
+    def __init__(self, hint: Hint, name: str):
         super().__init__()
         self.score = 0 # to set
         # TODO: Word2Vec...
@@ -36,6 +40,8 @@ class JoinConfid(BaseConfid):
         super().__init__()
         self.score = 0 # to set
         # TODO: foregin key...
+        # return 1 - eps,   if c 1 is a foreign key referring to c 2 (or vice versa)
+        # return eps,       otherwise
         pass
 
 

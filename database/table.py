@@ -70,3 +70,11 @@ class Database():
 
     def __getitem__(self, item):
         return self.tables[item]
+
+    def getAllTableNames(self):
+        return self.tables.keys()
+
+    def getAllTables(self):
+        return self.tables.items()
+
+db = Database("PlaceHolder") # going to be replaced with real one...
