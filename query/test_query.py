@@ -147,10 +147,10 @@ def test_column_basic(titanic):
     c = Column()
     assert str(c) == '?'
 
-    c = Column(hint=['papers'])
+    c = Column(hint=Hint(['papers']))
     assert str(c) == '?[papers]'
 
-    c = Column(hint=['papers', '10'])
+    c = Column(hint=Hint([['papers', '10']]))
     assert str(c) == '?[papers, 10]'
 
     c = Column(titanic['Age'])
@@ -164,7 +164,7 @@ def test_table_basic(titanic):
     t = Table()
     assert str(t) == '??'
 
-    t = Table(hint=['unique'])
+    t = Table(hint=Hint(['unique']))
     assert str(t) == '??[unique]'
 
     t = Table(titanic)
@@ -173,14 +173,14 @@ def test_table_basic(titanic):
 
 def test_aggregate_basic():
     c = Column('Age')
-    for f in all_aggregates:
+    for f in ops.all_aggregates:
         e = f(c)
-        assert str(e) == f'{e.func}({c.value})'
+        assert str(e) == f'{e.func}({c})'
 
-    c = Column(hint=['papers', '10'])
-    for f in all_aggregates:
+    c = Column(hint=Hint(['papers', '10']))
+    for f in ops.all_aggregates:
         e = f(c)
-        assert str(e) == f'{e.func}({str(c)})'
+        assert str(e) == f'{e.func}({c})'
 
 
 def test_predicate_basic():

@@ -7,8 +7,6 @@ from pathlib import Path
 import gensim.downloader
 
 from query.base import Hint
-from query.expr import Entity, AbstractTable, AbstractColumns, Value, Column, Table, \
-    GroupAgg, Aggregation, Predicate, Projection, Selection, Join
 from database.table import DatabaseColumn
 
 
@@ -54,7 +52,7 @@ class JoinConfid(BaseConfid):
 
 
 class PredConfid(BaseConfid):
-    def __init__(self, col: Column, val: Value):
+    def __init__(self, col: 'Column', val: 'Value'):
         super().__init__()
         self.score = 0 # to set
         # TODO: db content...

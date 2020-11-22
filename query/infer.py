@@ -1,11 +1,8 @@
 # Inference rules implementation
 # Fig 7 and Fig 8
 
-from query.base import BaseExpr, Hint
-from query.expr import Entity, AbstractTable, AbstractColumns, Value, Column, \
-    Table, GroupAgg, Aggregation, Predicate, Projection, Selection, Join
-from query.confid import BaseConfid, HintConfid, JoinConfid, PredConfid
-from query.type import Type, boolean, numeric, string
+from query.confid import BaseConfid
+from query.type import Type
 
 
 class TypeCheck():
@@ -18,11 +15,11 @@ class TypeCheck():
             raise TypeError(f"Invalid type of col_type: {type(col_type)}")
         self.type_set = type_set
         self.col_type = col_type
-    
+
     @property
     def isTypeSet(self):
         return self.type_set is not None
-    
+
     # construct a new TypeCheck with only given type exists
     def typeFilter(self, filter_type: Type):
         assert self.type_set is not None
@@ -35,7 +32,7 @@ class TypeCheck():
 
 class BaseSketchCompl():
     def __init__(self):
-        pass
+        self.confid = BaseConfid(0.)
 
     def __lt__(self, other):
         return self.confid < other.confid
