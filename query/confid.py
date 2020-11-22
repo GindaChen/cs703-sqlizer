@@ -6,20 +6,21 @@
 from query.base import Hint
 from query.expr import Entity, AbstractTable, AbstractColumns, Value, Column, Table, \
     GroupAgg, Aggregation, Predicate, Projection, Selection, Join
+from database.table import DatabaseColumn
 
 class BaseConfid():
     def __init__(self):
         pass
     
     @classmethod # compose a list of confidence
-    def compose(*confids):
+    def compose(confids):
         p = 1
         for c in confids:
             p *= c.score
         return p ** (1 / len(confids))
 
     def __mul__(self, other):
-        return BaseConfid.compose(self, other)
+        return BaseConfid.compose([self, other])
     
     # used by sort()
     def __lt__(self, other):
@@ -36,7 +37,7 @@ class HintConfid(BaseConfid):
 
 
 class JoinConfid(BaseConfid):
-    def __init__(self, lhs_col: Column, rhs_col: Column):
+    def __init__(self, lhs_col: DatabaseColumn, rhs_col: DatabaseColumn):
         super().__init__()
         self.score = 0 # to set
         # TODO: foregin key...

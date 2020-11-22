@@ -3,10 +3,10 @@ When initializing a database, the following objects are pre-initialized.
 So when the
 """
 from typing import Dict
-
+from query.type import Type, boolean, numeric, string
 
 class DatabaseColumn():
-    def __init__(self, name: str, table: 'DatabaseTable', type_=None):
+    def __init__(self, name: str, table: 'DatabaseTable', type_: Type=None):
         self.cname = name or ""
         self.table: 'DatabaseTable' = table
         self.info = {}
@@ -54,6 +54,15 @@ class DatabaseTable():
     def __getitem__(self, item):
         return self.columns[item]
 
+    def getAllColumnNames(self):
+        return self.columns.keys()
+
+    def getAllColumns(self):
+        return self.columns.items()
+    
+    def getAllColumnObjs(self):
+        return self.columns.values()
+
 
 class Database():
     def __init__(self, name):
@@ -76,5 +85,6 @@ class Database():
 
     def getAllTables(self):
         return self.tables.items()
+
 
 db = Database("PlaceHolder") # going to be replaced with real one...

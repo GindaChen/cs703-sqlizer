@@ -25,6 +25,9 @@ import query.operators as ops
 from query.type import boolean, numeric, string
 from database.table import DatabaseColumn, DatabaseTable
 from query.base import BaseExpr, AggregateFunc, Operator, Hint
+from query.infer import BaseSketchCompl, SingleSketchCompl, ComposeSketchCompl, TypeCheck
+from query.confid import BaseConfid, HintConfid, JoinConfid, PredConfid
+from database.table import db
 
 """
 Inherence Structure
@@ -88,10 +91,9 @@ class AbstractColumns(BaseExpr):
             else:
                 self.col_list = lhs.col_list + rhs.col_list
 
-    
     def unparse(self, indent=0):
         return ", ".join([c.unparse(indent) for c in self.col_list])
-
+    
 
 # this is "v"
 class Value(Entity):
@@ -129,6 +131,14 @@ class Column(Entity):
             return f'?{self.hint}'
         return self.col_name
 
+    def infer(self, type_check: TypeCheck=None):
+        assert self.isHole
+        assert type_check is not None
+        candidates = []
+        for c in type_check.type_set:
+            candidates.append(SingleSketchCompl({self.hint: c.name}, HintConfid(self.hint, c.name)))
+        candidates.sort(reverse=True)
+        return candidates
 
 # this is "t", a single table name
 class Table(AbstractTable):
@@ -145,6 +155,16 @@ class Table(AbstractTable):
         if self.isHole:
             return f'??{self.hint}'
         return self.table_name
+
+    def infer(self, type_check: TypeCheck=None):
+        assert self.isHole
+        assert type_check is None  # Table's infer must not have any type check constraints
+        candidates = []
+        for table_name, table in db.getAllTables():
+            table_type_check = TypeCheck(type_set=set(table.getAllColumnObjs())) # export type check info
+            candidates.append(SingleSketchCompl({self.hint: table_name}, HintConfid(self.hint, table_name), table_type_check))
+        candidates.sort(reverse=True) # sorted by confid, from high to low
+        return candidates
 
 
 class GroupAgg(BaseExpr):
@@ -207,6 +227,15 @@ class Projection(AbstractTable):
             proj_body += f'\n{mkIndent(indent)}GROUP BY '
             proj_body += ', '.join(group_by_cols)
         return proj_body
+    
+    def infer(self, type_check: TypeCheck=None):
+        assert type_check is None # projection must not have any type check constraints
+        candidates = []
+        for c1 in self.abs_table.getCandidates():
+            for c2 in self.abs_cols.getCandidates(c1.type_check):
+                candidates.append(ComposeSketchCompl([c1, c2]))
+        candidates.sort(reverse=True) # sorted by confid.
+        return candidates
 
 
 class Selection(AbstractTable):
@@ -218,6 +247,15 @@ class Selection(AbstractTable):
     def unparse(self, indent=0):
         return f'{self.abs_table.unparse(indent + 1)}\n{mkIndent(indent)}WHERE {self.pred.unparse(indent + 1)}'
 
+    def infer(self, type_check: TypeCheck=None):
+        assert type_check is None # selection must not have any type check constraints
+        candidates = []
+        for c1 in self.abs_table.getCandidates():
+            for c2 in self.pred.getCandidates(c1.type_check):
+                candidates.append(ComposeSketchCompl([c1, c2]))
+        candidates.sort(reverse=True) # sorted by confid.
+        return candidates
+
 
 class Join(AbstractTable):
     def __init__(self, lhs_abs_table: AbstractTable, rhs_abs_table: AbstractTable, lhs_col_name: Column, rhs_col_name: Column):
@@ -228,7 +266,24 @@ class Join(AbstractTable):
         self.rhs_col_name = rhs_col_name
     
     def unparse(self, indent=0):
-        return f'{self.lhs_abs_table.unparse(indent)} JOIN {self.rhs_abs_table.unparse(indent)} ON {self.lhs_col_name} = {self.rhs_col_name}'
+        return f'{self.lhs_abs_table.unparse(indent)} JOIN \
+            {self.rhs_abs_table.unparse(indent)} ON {self.lhs_col_name} = {self.rhs_col_name}'
+
+    def infer(self, type_check: TypeCheck=None):
+        assert type_check is None # join must not have any type check constraints
+        candidates = []
+        for c1 in self.lhs_abs_table.getCandidates():
+            for c2 in self.rhs_abs_table.getCandidates():
+                for c3 in self.lhs_col_name.getCandidates(c1.type_check):
+                    join_col_lhs = next(iter(c3.type_check.type_set))
+                    filter_type = join_col_lhs.type_
+                    # c4 must be columns in c2 and same type as c3
+                    for c4 in self.rhs_col_name.getCandidates(c2.type_check.typeFilter(filter_type)):
+                        join_col_rhs = next(iter(c4.type_check.type_set))
+                        candidates.append(ComposeSketchCompl([c1, c2, c3, c4]),
+                            more_confid=JoinConfid(join_col_lhs, join_col_rhs))
+        candidates.sort(reverse=True) # sorted by confid.
+        return candidates
 
 
 # unparse helper

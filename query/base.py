@@ -5,14 +5,26 @@ from query.type import boolean, equal_types, numeric
 if typing.TYPE_CHECKING:
     from query.expr import Aggregation
 
+from query.infer import TypeCheck
 
 class BaseExpr():
     def __init__(self):
+        self.all_candidates = None
         pass
 
     def __str__(self):
         return self.unparse()
-
+    
+    # all subclasses must inplement self.infer()
+    # if we want to implement some filter (e.g. only pick the first k candidates)
+    # we could implement it here
+    def getCandidates(self, type_check: TypeCheck=None):
+        if type_check is None: # then enumerate!
+            if self.all_candidates is None:
+                self.all_candidates = self.infer() # construct all candidates
+            return self.all_candidates
+        # else, use type info
+        return self.infer(type_check)
 
 class Hint():
     def __init__(self, hint=None):
