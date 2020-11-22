@@ -2,7 +2,6 @@
 # - Names of schema elements: Since our query sketches contain natural language hints for each hole, we can utilize table and column names in the database schema to assign confidence scores.
 # - Foreign and primary keys: Since foreign keys provide links between data in two different database tables, join operations that involve foreign keys have a higher chance of being the intended term.
 # - Database contents: Our approach also uses the contents of the database when assigning scores to queries. For instance, a candidate term sigma_phi(T) is relatively unlikely to occur in the target query if there are no entries in relation T satisfying predicate phi
-import os
 from pathlib import Path
 
 import gensim.downloader
@@ -12,16 +11,20 @@ from query.expr import Entity, AbstractTable, AbstractColumns, Value, Column, Ta
     GroupAgg, Aggregation, Predicate, Projection, Selection, Join
 from database.table import DatabaseColumn
 
-class BaseConfid():
-    def __init__(self):
-        pass
 
-    @classmethod # compose a list of confidence
-    def compose(confids):
+class BaseConfid():
+    def __init__(self, score=0.):
+        self.score = score
+
+    @classmethod
+    def compose(cls, confid_lst):
+        """
+        compose a list of confidence
+        """
         p = 1
-        for c in confids:
+        for c in confid_lst:
             p *= c.score
-        return p ** (1 / len(confids))
+        return BaseConfid(p ** (1 / len(confid_lst)))
 
     def __mul__(self, other):
         return BaseConfid.compose([self, other])
