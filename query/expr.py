@@ -136,7 +136,7 @@ class Column(Entity):
         assert type_check is not None
         candidates = []
         for c in type_check.type_set:
-            candidates.append(SingleSketchCompl({self.hint: c.name}, HintConfid(self.hint, c.name)))
+            candidates.append(SingleSketchCompl({self.hint: c}, HintConfid(self.hint, c.name)))
         candidates.sort(reverse=True)
         return candidates
 
@@ -162,7 +162,7 @@ class Table(AbstractTable):
         candidates = []
         for table_name, table in db.getAllTables():
             table_type_check = TypeCheck(type_set=set(table.getAllColumnObjs())) # export type check info
-            candidates.append(SingleSketchCompl({self.hint: table_name}, HintConfid(self.hint, table_name), table_type_check))
+            candidates.append(SingleSketchCompl({self.hint: table}, HintConfid(self.hint, table_name), table_type_check))
         candidates.sort(reverse=True) # sorted by confid, from high to low
         return candidates
 
