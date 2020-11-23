@@ -7,13 +7,14 @@ from query.base import Hint
 from query.expr import Entity, AbstractTable, AbstractColumns, Value, Column, Table, \
     GroupAgg, Aggregation, Predicate, Projection, Selection, Join
 from database.table import DatabaseColumn
+from query.infer import BaseSketchCompl
 
 class BaseConfid():
     def __init__(self):
         pass
     
     @classmethod # compose a list of confidence
-    def compose(confids):
+    def compose(cls, confids):
         p = 1
         for c in confids:
             p *= c.score
@@ -47,8 +48,16 @@ class JoinConfid(BaseConfid):
 
 
 class PredConfid(BaseConfid):
-    def __init__(self, col: Column, val: Value):
+    def __init__(self, pred_expr: Predicate, c_sketch_compl: BaseSketchCompl, e_sketch_compl: BaseSketchCompl):
         super().__init__()
         self.score = 0 # to set
         # TODO: db content...
+        # evaluye whether pred_expr with sketch_compl can be evaluted to true
+        pass
+
+class CastConfid(BaseConfid):
+    def __init__(self, val, src_type, dst_type):
+        super().__init__()
+        # TODO: 
+        self.score = 0
         pass

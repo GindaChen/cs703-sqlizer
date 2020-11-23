@@ -4,6 +4,8 @@ So when the
 """
 from typing import Dict
 from query.type import Type, boolean, numeric, string
+from query.infer import BaseSketchCompl
+from query.expr import Aggregation, Value
 
 class DatabaseColumn():
     def __init__(self, name: str, table: 'DatabaseTable', type_: Type=None):
@@ -24,6 +26,19 @@ class DatabaseColumn():
 
     def schema(self):
         return f'{self.type_}'
+
+    # below are just some "fake" DatabaseColumn, which is used for type checking
+
+    # construct a temperate DatabaseColumn from an aggreation function
+    # this is used for type inference
+    @classmethod
+    def aggDatabaseColumn(cls, agg_expr: Aggregation, sketch_compl: BaseSketchCompl):
+        # TODO: current implementation might work, but may need more tests
+        return DatabaseColumn(name=f'agg_tmp', table=None, type_=agg_expr.func.output_type)
+    
+    def valueDatabaseColumn(cls, type_):
+        # TODO: current implementation might work, but may need more tests
+        return DatabaseColumn(name=f'val_tmp', table=None, type_=type_)
 
 
 class DatabaseTable():

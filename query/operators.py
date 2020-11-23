@@ -1,4 +1,5 @@
 from query.base import Operator, AggregateFunc
+from query.type import equal_types
 
 # ------------------------------------
 #       Boolean Operators
@@ -30,7 +31,7 @@ or_ = Operator.BinaryBoolean('OR')
 # ------------------------------------
 max_ = AggregateFunc.NumericAggregateFunc('max')
 min_ = AggregateFunc.NumericAggregateFunc('min')
-count_ = AggregateFunc.NumericAggregateFunc('count')
+count_ = AggregateFunc.NumericAggregateFunc('count', input_type=equal_types(1))
 sum_ = AggregateFunc.NumericAggregateFunc('sum')
 avg_ = AggregateFunc.NumericAggregateFunc('avg')
 

@@ -24,12 +24,23 @@ class TypeCheck():
         return self.type_set is not None
     
     # construct a new TypeCheck with only given type exists
-    def typeFilter(self, filter_type: Type):
+    # filter_type could be a Type object, or a list of Type
+    def typeFilter(self, filter_type):
         assert self.type_set is not None
+        if isinstance(filter_type, Type):
+            filter_type = [filter_type]
         new_type_set = set()
         for c in self.type_set:
-            if c.type_ == filter_type:
+            if c.type_ in filter_type:
                 new_type_set.add(c)
+        return TypeCheck(type_set=new_type_set)
+    
+    # construct a new TypeCheck from union a TypeCheck list
+    @classmethod
+    def typeUnion(cls, from_list):
+        new_type_set = set()
+        for t in from_list:
+            new_type_set.union(t.type_set)
         return TypeCheck(type_set=new_type_set)
 
 
@@ -51,7 +62,8 @@ class SingleSketchCompl(BaseSketchCompl):
 
 
 class ComposeSketchCompl(BaseSketchCompl):
-    def __init__(self, from_list, more_confid=None):
+    # if type_check is not specified, the union of from_list's type will be used
+    def __init__(self, from_list, type_check: TypeCheck=None, more_confid=None):
         super().__init__()
         self.sub_compl = from_list
         self.more_confid = more_confid
@@ -60,10 +72,18 @@ class ComposeSketchCompl(BaseSketchCompl):
         if more_confid is not None:
             confids.append(more_confid)
         self.confid = BaseConfid.compose(confids)
-        type_set = set()
-        for sc in from_list:
-            type_set.update(sc.type_check.type_set)
-        self.type_check = TypeCheck(type_set)
+        if type_check is not None:
+            self.type_check = type_check
+        else:
+            type_set = set()
+            for sc in from_list:
+                type_set.union(sc.type_check.type_set)
+            self.type_check = TypeCheck(type_set)
+
+    # compose a TypeCheck from a list of SketchCompl
+    @classmethod
+    def typeCompose(cls, from_list):
+        return TypeCheck.typeUnion([sc.type_check for sc in from_list])
 
 
 # The inference rules produce a list of completion sorted by confidence

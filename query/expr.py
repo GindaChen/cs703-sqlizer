@@ -26,7 +26,7 @@ from query.type import boolean, numeric, string
 from database.table import DatabaseColumn, DatabaseTable
 from query.base import BaseExpr, AggregateFunc, Operator, Hint
 from query.infer import BaseSketchCompl, SingleSketchCompl, ComposeSketchCompl, TypeCheck
-from query.confid import BaseConfid, HintConfid, JoinConfid, PredConfid
+from query.confid import BaseConfid, HintConfid, JoinConfid, PredConfid, CastConfid
 from database.table import db
 
 """
@@ -94,6 +94,25 @@ class AbstractColumns(BaseExpr):
     def unparse(self, indent=0):
         return ", ".join([c.unparse(indent) for c in self.col_list])
     
+    # Note our implementation may be different from the paper
+    # the paper compose two scores each time
+    # but we compose them all together
+    # given the weired definition of confidence composition function, these two results might not be equivalent
+    def infer(self, type_check: TypeCheck=None):
+        assert type_check is not None    
+        sub_candi_list = self.candi_permute_helper(start=0, type_check=type_check)
+        candidates = [ComposeSketchCompl(candi_list) for candi_list in sub_candi_list]
+        candidates.sort(reverse=True) # sorted by confid, from high to low
+        return candidates
+
+    def candi_permute_helper(self, start, type_check: TypeCheck):
+        if start == len(self.col_list) - 1:
+            return [[c] for c in self.col_list[start].getCandidates(type_check)]
+        return [[head] + tail
+            for head in self.col_list[start].getCandidates(type_check)
+            for tail in self.candi_permute_helper(start + 1)
+        ]
+
 
 # this is "v"
 class Value(Entity):
@@ -113,6 +132,16 @@ class Value(Entity):
         if isinstance(self.val, str):
             return f'"{self.val}"'
         return str(self.val)
+    
+    def infer(self, type_check: TypeCheck=None):
+        assert type_check is not None
+        possible_types = set(c.type_ for c in type_check.type_set)
+        candidates = [SingleSketchCompl({}, confid=CastConfid(self.value, self.type, t),
+            type_check=DatabaseColumn.valueDatabaseColumn(t))
+            for t in possible_types
+        ]
+        candidates.sort(reverse=True)
+        return candidates
 
 
 # this is "c", a single column name
@@ -134,11 +163,11 @@ class Column(Entity):
     def infer(self, type_check: TypeCheck=None):
         assert self.isHole
         assert type_check is not None
-        candidates = []
-        for c in type_check.type_set:
-            candidates.append(SingleSketchCompl({self.hint: c}, HintConfid(self.hint, c.name)))
+        candidates = [SingleSketchCompl({self.hint: c}, HintConfid(self.hint, c.name), type_check=TypeCheck({c}))
+            for c in type_check.type_set]
         candidates.sort(reverse=True)
         return candidates
+
 
 # this is "t", a single table name
 class Table(AbstractTable):
@@ -176,6 +205,14 @@ class GroupAgg(BaseExpr):
     def unparse(self, indent=0): # only print agg here and leave by_col handled by Projection
         return self.agg.unparse(indent)
 
+    def infer(self, type_check: TypeCheck=None):
+        assert type_check is not None
+        candidates = [ComposeSketchCompl([c1, c2])
+            for c1 in self.agg.getCandidates(type_check)
+            for c2 in self.by_col.getCandidates(type_check)]
+        candidates.sort(reverse=True) # sorted by confid, from high to low
+        return candidates
+
 
 class Aggregation(BaseExpr):
     def __init__(self, func: AggregateFunc, col: Column):
@@ -185,6 +222,16 @@ class Aggregation(BaseExpr):
 
     def unparse(self, indent=0):
         return f'{self.func}({self.col.unparse(indent)})'
+    
+    def infer(self, type_check: TypeCheck=None):
+        assert type_check is not None
+        candidates = []
+        input_type = self.func.input_type
+        for c1 in self.col.getCandidates(type_check.typeFilter(input_type)):
+            tmp_db_col = DatabaseTable.aggDatabaseColumn(self, c1)
+            candidates.append(ComposeSketchCompl([c1], type_check={tmp_db_col}))
+        candidates.sort(reverse=True) # sorted by confid, from high to low
+        return candidates
 
 
 class Predicate(BaseExpr):
@@ -192,6 +239,7 @@ class Predicate(BaseExpr):
         super().__init__()
         self.func: Operator = func
         self.args = args
+        assert self.func.arity == len(self.args)
 
     def unparse(self, indent=0):
         func = self.func.name
@@ -204,6 +252,27 @@ class Predicate(BaseExpr):
             return f'({lhs} {func} {rhs})'
         else:
             raise ValueError("Incorrect arity")
+    
+    def infer(self, type_check: TypeCheck=None):
+        assert type_check is not None
+        candidates = []
+        # handle three cases: Pred, PredNeg, PredLop
+        if self.func == ops.neg: # handle PredNeg
+            candidates = self.args[0].getCandidates(type_check)
+        elif self.func == ops.and_ or self.func == ops.or_:
+            candidates = [ComposeSketchCompl([c1, c2], type_check=TypeCheck(col_type=boolean))
+                for c1 in self.args[0].getCandidates(type_check)
+                for c2 in self.args[1].getCandidates(type_check)]
+        else: # handle eq, lt, gt, le, ge
+            lhs_c, rhs_e = self.args
+            for c1 in self.lhs_c.getCandidates(type_check):
+                lhs_c_type = next(iter(c1.type_check.type_set))
+                # c2 must have same type as c1; apply type filter
+                for c2 in self.rhs_e.getCandidates(type_check.typeFilter(lhs_c_type)):
+                    candidates.append(ComposeSketchCompl([c1, c2], type_check=TypeCheck(col_type=boolean),
+                        more_confid=PredConfid(self, c1, c2)))
+        candidates.sort(reverse=True)
+        return candidates
 
 
 class Projection(AbstractTable):
@@ -233,7 +302,7 @@ class Projection(AbstractTable):
         candidates = []
         for c1 in self.abs_table.getCandidates():
             for c2 in self.abs_cols.getCandidates(c1.type_check):
-                candidates.append(ComposeSketchCompl([c1, c2]))
+                candidates.append(ComposeSketchCompl([c1, c2]), type_check=c2.type_check)
         candidates.sort(reverse=True) # sorted by confid.
         return candidates
 
@@ -252,7 +321,7 @@ class Selection(AbstractTable):
         candidates = []
         for c1 in self.abs_table.getCandidates():
             for c2 in self.pred.getCandidates(c1.type_check):
-                candidates.append(ComposeSketchCompl([c1, c2]))
+                candidates.append(ComposeSketchCompl([c1, c2]), type_check=c1.type_check)
         candidates.sort(reverse=True) # sorted by confid.
         return candidates
 
@@ -281,6 +350,7 @@ class Join(AbstractTable):
                     for c4 in self.rhs_col_name.getCandidates(c2.type_check.typeFilter(filter_type)):
                         join_col_rhs = next(iter(c4.type_check.type_set))
                         candidates.append(ComposeSketchCompl([c1, c2, c3, c4]),
+                            type_check=ComposeSketchCompl.typeCompose([c1, c2]),
                             more_confid=JoinConfid(join_col_lhs, join_col_rhs))
         candidates.sort(reverse=True) # sorted by confid.
         return candidates
