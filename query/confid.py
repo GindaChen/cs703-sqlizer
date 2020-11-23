@@ -8,6 +8,7 @@ import gensim.downloader
 
 from query.base import Hint
 from database.table import DatabaseColumn
+from query.infer import BaseSketchCompl
 
 
 class BaseConfid():
@@ -52,8 +53,16 @@ class JoinConfid(BaseConfid):
 
 
 class PredConfid(BaseConfid):
-    def __init__(self, col: 'Column', val: 'Value'):
+    def __init__(self, pred_expr: Predicate, c_sketch_compl: BaseSketchCompl, e_sketch_compl: BaseSketchCompl):
         super().__init__()
         self.score = 0 # to set
         # TODO: db content...
+        # evaluye whether pred_expr with sketch_compl can be evaluted to true
+        pass
+
+class CastConfid(BaseConfid):
+    def __init__(self, val, src_type, dst_type):
+        super().__init__()
+        # TODO: 
+        self.score = 0
         pass
