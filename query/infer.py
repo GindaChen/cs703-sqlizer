@@ -43,7 +43,7 @@ class TypeCheck():
             new_type_set.union(t.type_set)
         return TypeCheck(type_set=new_type_set)
 
-
+# SketchCompl should work like a dict, which map Hint to string
 class BaseSketchCompl():
     def __init__(self):
         pass
@@ -59,6 +59,9 @@ class SingleSketchCompl(BaseSketchCompl):
         self.compl = compl
         self.confid = confid
         self.type_check = type_check
+    
+    def __getitem__(self, item: BaseConfid):
+        return self.compl.get(item)
 
 
 class ComposeSketchCompl(BaseSketchCompl):
@@ -85,5 +88,18 @@ class ComposeSketchCompl(BaseSketchCompl):
     def typeCompose(cls, from_list):
         return TypeCheck.typeUnion([sc.type_check for sc in from_list])
 
+    def getSubCompl(self, idx: int):
+        return self.sub_compl[idx]
+
+# this is only used for unparse to indicate a None sketch completion
+# when passing this as the skecth completion for unparse, print the hole instead of what is filled
+class UnparseDefaultSketchCompl(ComposeSketchCompl):
+    # always return self
+    def getSubCompl(self, idx: int):
+        return self
+
+# Do not export UnparseDefaultSketchCompl
+# instead, only export NoneSketchCompl
+NoneSketchCompl = UnparseDefaultSketchCompl(from_list=None)
 
 # The inference rules produce a list of completion sorted by confidence

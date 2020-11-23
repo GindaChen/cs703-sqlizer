@@ -25,7 +25,7 @@ import query.operators as ops
 from query.type import boolean, numeric, string
 from database.table import DatabaseColumn, DatabaseTable
 from query.base import BaseExpr, AggregateFunc, Operator, Hint
-from query.infer import BaseSketchCompl, SingleSketchCompl, ComposeSketchCompl, TypeCheck
+from query.infer import BaseSketchCompl, SingleSketchCompl, ComposeSketchCompl, NoneSketchCompl, TypeCheck
 from query.confid import BaseConfid, HintConfid, JoinConfid, PredConfid, CastConfid
 from database.table import db
 
@@ -91,15 +91,16 @@ class AbstractColumns(BaseExpr):
             else:
                 self.col_list = lhs.col_list + rhs.col_list
 
-    def unparse(self, indent=0):
-        return ", ".join([c.unparse(indent) for c in self.col_list])
+    def unparse(self, indent=0, sketch_compl: ComposeSketchCompl=NoneSketchCompl):
+        return ", ".join([self.col_list[i].unparse(indent, sketch_compl.getSubCompl(i))
+            for i in range(len(self.col_list))])
     
     # Note our implementation may be different from the paper
     # the paper compose two scores each time
     # but we compose them all together
     # given the weired definition of confidence composition function, these two results might not be equivalent
     def infer(self, type_check: TypeCheck=None):
-        assert type_check is not None    
+        assert type_check is not None
         sub_candi_list = self.candi_permute_helper(start=0, type_check=type_check)
         candidates = [ComposeSketchCompl(candi_list) for candi_list in sub_candi_list]
         candidates.sort(reverse=True) # sorted by confid, from high to low
@@ -128,7 +129,7 @@ class Value(Entity):
             TypeError(f'Invalid Type: {str(type(val))}')
         self.val = val
 
-    def unparse(self, indent=0):
+    def unparse(self, indent=0, sketch_compl: BaseSketchCompl=NoneSketchCompl):
         if isinstance(self.val, str):
             return f'"{self.val}"'
         return str(self.val)
@@ -155,9 +156,12 @@ class Column(Entity):
     def isHole(self):
         return self.hint is not None # if this hole has no hint, it should at least have a Hint() with empty hint
     
-    def unparse(self, indent=0):
+    def unparse(self, indent=0, sketch_compl: BaseSketchCompl=NoneSketchCompl):
         if self.isHole:
-            return f'?{self.hint}'
+            if sketch_compl == NoneSketchCompl:
+                return f'?{self.hint}'
+            else:
+                return sketch_compl[self.hint]
         return self.col_name
 
     def infer(self, type_check: TypeCheck=None):
@@ -180,9 +184,12 @@ class Table(AbstractTable):
     def isHole(self):
         return self.hint is not None # if this hole has no hint, it should at least have a Hint() with empty hint
     
-    def unparse(self, indent=0):
+    def unparse(self, indent=0, sketch_compl: BaseSketchCompl=NoneSketchCompl):
         if self.isHole:
-            return f'??{self.hint}'
+            if sketch_compl == NoneSketchCompl:
+                return f'??{self.hint}'
+            else:
+                return sketch_compl[self.hint]
         return self.table_name
 
     def infer(self, type_check: TypeCheck=None):
@@ -202,8 +209,9 @@ class GroupAgg(BaseExpr):
         self.agg = agg
         self.by_col = by_col
 
-    def unparse(self, indent=0): # only print agg here and leave by_col handled by Projection
-        return self.agg.unparse(indent)
+    def unparse(self, indent=0, sketch_compl: ComposeSketchCompl=NoneSketchCompl):
+        # only print agg here and leave by_col handled by Projection
+        return self.agg.unparse(indent, sketch_compl.getSubCompl(0))
 
     def infer(self, type_check: TypeCheck=None):
         assert type_check is not None
@@ -220,8 +228,8 @@ class Aggregation(BaseExpr):
         self.func = func
         self.col = col
 
-    def unparse(self, indent=0):
-        return f'{self.func}({self.col.unparse(indent)})'
+    def unparse(self, indent=0, sketch_compl: ComposeSketchCompl=NoneSketchCompl):
+        return f'{self.func}({self.col.unparse(indent, sketch_compl.getSubCompl(0))})'
     
     def infer(self, type_check: TypeCheck=None):
         assert type_check is not None
@@ -241,14 +249,15 @@ class Predicate(BaseExpr):
         self.args = args
         assert self.func.arity == len(self.args)
 
-    def unparse(self, indent=0):
+    def unparse(self, indent=0, sketch_compl: ComposeSketchCompl=NoneSketchCompl):
         func = self.func.name
         arity = self.func.arity
         if arity == 1:
-            v = self.args[0].unparse(indent)
+            v = self.args[0].unparse(indent, sketch_compl.getSubCompl(0))
             return f'{func}({v})'
         elif arity == 2:
-            lhs, rhs = (i.unparse(indent) for i in self.args)
+            lhs = self.args[0].unparse(indent, sketch_compl.getSubCompl(0))
+            rhs = self.args[1].unparse(indent, sketch_compl.getSubCompl(1))
             return f'({lhs} {func} {rhs})'
         else:
             raise ValueError("Incorrect arity")
@@ -258,17 +267,18 @@ class Predicate(BaseExpr):
         candidates = []
         # handle three cases: Pred, PredNeg, PredLop
         if self.func == ops.neg: # handle PredNeg
-            candidates = self.args[0].getCandidates(type_check)
+            candidates = [ComposeSketchCompl([c1], type_check=TypeCheck(col_type=boolean))
+                for c1 in self.args[0].getCandidates(type_check)]
         elif self.func == ops.and_ or self.func == ops.or_:
             candidates = [ComposeSketchCompl([c1, c2], type_check=TypeCheck(col_type=boolean))
                 for c1 in self.args[0].getCandidates(type_check)
                 for c2 in self.args[1].getCandidates(type_check)]
         else: # handle eq, lt, gt, le, ge
             lhs_c, rhs_e = self.args
-            for c1 in self.lhs_c.getCandidates(type_check):
+            for c1 in lhs_c.getCandidates(type_check):
                 lhs_c_type = next(iter(c1.type_check.type_set))
                 # c2 must have same type as c1; apply type filter
-                for c2 in self.rhs_e.getCandidates(type_check.typeFilter(lhs_c_type)):
+                for c2 in rhs_e.getCandidates(type_check.typeFilter(lhs_c_type)):
                     candidates.append(ComposeSketchCompl([c1, c2], type_check=TypeCheck(col_type=boolean),
                         more_confid=PredConfid(self, c1, c2)))
         candidates.sort(reverse=True)
@@ -281,16 +291,18 @@ class Projection(AbstractTable):
         self.abs_table = abs_table
         self.abs_cols = abs_cols
 
-    def unparse(self, indent=0):
+    def unparse(self, indent=0, sketch_compl: ComposeSketchCompl=NoneSketchCompl):
         if isinstance(self.abs_table, Projection): # nested SELECT
-            abs_table_unparse_result = f'({self.abs_table.unparse(indent + 1)})'
+            abs_table_unparse_result = f'({self.abs_table.unparse(indent + 1, sketch_compl.getSubCompl(0))})'
         else:
-            abs_table_unparse_result = self.abs_table.unparse(indent)
-        proj_body = f'SELECT {self.abs_cols.unparse(indent)}\n{mkIndent(indent)}FROM {abs_table_unparse_result}'
+            abs_table_unparse_result = self.abs_table.unparse(indent, sketch_compl.getSubCompl(0))
+        proj_body = f'SELECT {self.abs_cols.unparse(indent, sketch_compl.getSubCompl(1))}\
+            \n{mkIndent(indent)}FROM {abs_table_unparse_result}'
         group_by_cols = []
-        for c in self.abs_cols.col_list:
+        for i in range(len(self.abs_cols.col_list)):
+            c = self.abs_cols.col_list[i]
             if isinstance(c, GroupAgg):
-                group_by_cols.append(c.by_col.unparse(indent))
+                group_by_cols.append(c.by_col.unparse(indent, sketch_compl.getSubCompl(1).getSubCompl(i)))
         group_by_cols = set(group_by_cols) # deduplicate
         if len(group_by_cols) > 0:
             proj_body += f'\n{mkIndent(indent)}GROUP BY '
@@ -313,8 +325,9 @@ class Selection(AbstractTable):
         self.abs_table = abs_table
         self.pred = pred
 
-    def unparse(self, indent=0):
-        return f'{self.abs_table.unparse(indent + 1)}\n{mkIndent(indent)}WHERE {self.pred.unparse(indent + 1)}'
+    def unparse(self, indent=0, sketch_compl: ComposeSketchCompl=NoneSketchCompl):
+        return f'{self.abs_table.unparse(indent + 1, sketch_compl.getSubCompl(0))}\n\
+            {mkIndent(indent)}WHERE {self.pred.unparse(indent + 1, sketch_compl.getSubCompl(1))}'
 
     def infer(self, type_check: TypeCheck=None):
         assert type_check is None # selection must not have any type check constraints
@@ -327,27 +340,29 @@ class Selection(AbstractTable):
 
 
 class Join(AbstractTable):
-    def __init__(self, lhs_abs_table: AbstractTable, rhs_abs_table: AbstractTable, lhs_col_name: Column, rhs_col_name: Column):
+    def __init__(self, lhs_abs_table: AbstractTable, rhs_abs_table: AbstractTable, lhs_col: Column, rhs_col: Column):
         super().__init__()
         self.lhs_abs_table = lhs_abs_table
         self.rhs_abs_table = rhs_abs_table
-        self.lhs_col_name = lhs_col_name
-        self.rhs_col_name = rhs_col_name
+        self.lhs_col = lhs_col
+        self.rhs_col = rhs_col
     
-    def unparse(self, indent=0):
-        return f'{self.lhs_abs_table.unparse(indent)} JOIN \
-            {self.rhs_abs_table.unparse(indent)} ON {self.lhs_col_name} = {self.rhs_col_name}'
+    def unparse(self, indent=0, sketch_compl: ComposeSketchCompl=NoneSketchCompl):
+        return f'{self.lhs_abs_table.unparse(indent, sketch_compl.getSubCompl(0))} JOIN \
+            {self.rhs_abs_table.unparse(indent, sketch_compl.getSubCompl(1))} \
+                ON {self.lhs_col.unparse(indent, sketch_compl.getSubCompl(2))} \
+                    = {self.rhs_col.unparse(indent, sketch_compl.getSubCompl(3))}'
 
     def infer(self, type_check: TypeCheck=None):
         assert type_check is None # join must not have any type check constraints
         candidates = []
         for c1 in self.lhs_abs_table.getCandidates():
             for c2 in self.rhs_abs_table.getCandidates():
-                for c3 in self.lhs_col_name.getCandidates(c1.type_check):
+                for c3 in self.lhs_col.getCandidates(c1.type_check):
                     join_col_lhs = next(iter(c3.type_check.type_set))
                     filter_type = join_col_lhs.type_
                     # c4 must be columns in c2 and same type as c3
-                    for c4 in self.rhs_col_name.getCandidates(c2.type_check.typeFilter(filter_type)):
+                    for c4 in self.rhs_col.getCandidates(c2.type_check.typeFilter(filter_type)):
                         join_col_rhs = next(iter(c4.type_check.type_set))
                         candidates.append(ComposeSketchCompl([c1, c2, c3, c4]),
                             type_check=ComposeSketchCompl.typeCompose([c1, c2]),
