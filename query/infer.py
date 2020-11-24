@@ -1,18 +1,15 @@
 # Inference rules implementation
 # Fig 7 and Fig 8
 
-from query.base import BaseExpr, Hint
-from query.expr import Entity, AbstractTable, AbstractColumns, Value, Column, \
-    Table, GroupAgg, Aggregation, Predicate, Projection, Selection, Join
-from query.confid import BaseConfid, HintConfid, JoinConfid, PredConfid
-from query.type import Type, boolean, numeric, string
+from query.confid import BaseConfid
+from query.type import Type
 
 
 class TypeCheck():
     # if constructed from type_set, type_set must be of form: {DatabaseColumn,}
     # if constructed from col_type, col_type must be of Type
     def __init__(self, type_set: set=None, col_type: Type=None):
-        if type_set is not None == col_type is None:
+        if type_set is None == col_type is None:
             raise ValueError("type_set and col_type cannot be both None or not None")
         if col_type is not None and not isinstance(col_type, Type):
             raise TypeError(f"Invalid type of col_type: {type(col_type)}")
@@ -81,7 +78,7 @@ class ComposeSketchCompl(BaseSketchCompl):
             type_set = set()
             for sc in from_list:
                 type_set.union(sc.type_check.type_set)
-            self.type_check = TypeCheck(type_set)
+            self.type_check = TypeCheck(type_set=type_set)
 
     # compose a TypeCheck from a list of SketchCompl
     @classmethod
@@ -94,12 +91,15 @@ class ComposeSketchCompl(BaseSketchCompl):
 # this is only used for unparse to indicate a None sketch completion
 # when passing this as the skecth completion for unparse, print the hole instead of what is filled
 class UnparseDefaultSketchCompl(ComposeSketchCompl):
+    def __init__(self):
+        pass
+
     # always return self
     def getSubCompl(self, idx: int):
         return self
 
 # Do not export UnparseDefaultSketchCompl
 # instead, only export NoneSketchCompl
-NoneSketchCompl = UnparseDefaultSketchCompl(from_list=None)
+NoneSketchCompl = UnparseDefaultSketchCompl()
 
 # The inference rules produce a list of completion sorted by confidence

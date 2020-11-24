@@ -27,7 +27,7 @@ from database.table import DatabaseColumn, DatabaseTable
 from query.base import BaseExpr, AggregateFunc, Operator, Hint
 from query.infer import BaseSketchCompl, SingleSketchCompl, ComposeSketchCompl, NoneSketchCompl, TypeCheck
 from query.confid import BaseConfid, HintConfid, JoinConfid, PredConfid, CastConfid
-from database.table import db
+from database.table import getDatabase
 
 """
 Inherence Structure
@@ -111,7 +111,7 @@ class AbstractColumns(BaseExpr):
             return [[c] for c in self.col_list[start].getCandidates(type_check)]
         return [[head] + tail
             for head in self.col_list[start].getCandidates(type_check)
-            for tail in self.candi_permute_helper(start + 1)
+            for tail in self.candi_permute_helper(start + 1, type_check)
         ]
 
 
@@ -161,7 +161,7 @@ class Column(Entity):
             if sketch_compl == NoneSketchCompl:
                 return f'?{self.hint}'
             else:
-                return sketch_compl[self.hint]
+                return sketch_compl[self.hint].name
         return self.col_name
 
     def infer(self, type_check: TypeCheck=None):
@@ -189,13 +189,14 @@ class Table(AbstractTable):
             if sketch_compl == NoneSketchCompl:
                 return f'??{self.hint}'
             else:
-                return sketch_compl[self.hint]
+                return sketch_compl[self.hint].name
         return self.table_name
 
     def infer(self, type_check: TypeCheck=None):
         assert self.isHole
         assert type_check is None  # Table's infer must not have any type check constraints
         candidates = []
+        db = getDatabase()
         for table_name, table in db.getAllTables():
             table_type_check = TypeCheck(type_set=set(table.getAllColumnObjs())) # export type check info
             candidates.append(SingleSketchCompl({self.hint: table}, HintConfid(self.hint, table_name), table_type_check))
@@ -236,7 +237,7 @@ class Aggregation(BaseExpr):
         candidates = []
         input_type = self.func.input_type
         for c1 in self.col.getCandidates(type_check.typeFilter(input_type)):
-            tmp_db_col = DatabaseTable.aggDatabaseColumn(self, c1)
+            tmp_db_col = DatabaseTable.aggDatabaseColumn(self)
             candidates.append(ComposeSketchCompl([c1], type_check={tmp_db_col}))
         candidates.sort(reverse=True) # sorted by confid, from high to low
         return candidates
@@ -296,8 +297,7 @@ class Projection(AbstractTable):
             abs_table_unparse_result = f'({self.abs_table.unparse(indent + 1, sketch_compl.getSubCompl(0))})'
         else:
             abs_table_unparse_result = self.abs_table.unparse(indent, sketch_compl.getSubCompl(0))
-        proj_body = f'SELECT {self.abs_cols.unparse(indent, sketch_compl.getSubCompl(1))}\
-            \n{mkIndent(indent)}FROM {abs_table_unparse_result}'
+        proj_body = f'SELECT {self.abs_cols.unparse(indent, sketch_compl.getSubCompl(1))}\n{mkIndent(indent)}FROM {abs_table_unparse_result}'
         group_by_cols = []
         for i in range(len(self.abs_cols.col_list)):
             c = self.abs_cols.col_list[i]
@@ -314,7 +314,7 @@ class Projection(AbstractTable):
         candidates = []
         for c1 in self.abs_table.getCandidates():
             for c2 in self.abs_cols.getCandidates(c1.type_check):
-                candidates.append(ComposeSketchCompl([c1, c2]), type_check=c2.type_check)
+                candidates.append(ComposeSketchCompl([c1, c2], type_check=c2.type_check))
         candidates.sort(reverse=True) # sorted by confid.
         return candidates
 
@@ -348,10 +348,10 @@ class Join(AbstractTable):
         self.rhs_col = rhs_col
     
     def unparse(self, indent=0, sketch_compl: ComposeSketchCompl=NoneSketchCompl):
-        return f'{self.lhs_abs_table.unparse(indent, sketch_compl.getSubCompl(0))} JOIN \
-            {self.rhs_abs_table.unparse(indent, sketch_compl.getSubCompl(1))} \
-                ON {self.lhs_col.unparse(indent, sketch_compl.getSubCompl(2))} \
-                    = {self.rhs_col.unparse(indent, sketch_compl.getSubCompl(3))}'
+        return f"{self.lhs_abs_table.unparse(indent, sketch_compl.getSubCompl(0))} JOIN "\
+        f"{self.rhs_abs_table.unparse(indent, sketch_compl.getSubCompl(1))} ON "\
+        f"{self.lhs_col.unparse(indent, sketch_compl.getSubCompl(2))} = "\
+        f"{self.rhs_col.unparse(indent, sketch_compl.getSubCompl(3))}"
 
     def infer(self, type_check: TypeCheck=None):
         assert type_check is None # join must not have any type check constraints

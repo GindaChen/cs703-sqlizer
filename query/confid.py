@@ -4,13 +4,11 @@
 # - Database contents: Our approach also uses the contents of the database when assigning scores to queries. For instance, a candidate term sigma_phi(T) is relatively unlikely to occur in the target query if there are no entries in relation T satisfying predicate phi
 
 from query.base import Hint
-from query.expr import Entity, AbstractTable, AbstractColumns, Value, Column, Table, \
-    GroupAgg, Aggregation, Predicate, Projection, Selection, Join
 from database.table import DatabaseColumn
-from query.infer import BaseSketchCompl
 
 class BaseConfid():
-    def __init__(self):
+    def __init__(self, score=0):
+        self.score = score
         pass
     
     @classmethod # compose a list of confidence
@@ -18,7 +16,7 @@ class BaseConfid():
         p = 1
         for c in confids:
             p *= c.score
-        return p ** (1 / len(confids))
+        return BaseConfid(score=p ** (1 / len(confids)))
 
     def __mul__(self, other):
         return BaseConfid.compose([self, other])
@@ -48,7 +46,7 @@ class JoinConfid(BaseConfid):
 
 
 class PredConfid(BaseConfid):
-    def __init__(self, pred_expr: Predicate, c_sketch_compl: BaseSketchCompl, e_sketch_compl: BaseSketchCompl):
+    def __init__(self, pred_expr: 'Predicate', c_sketch_compl: 'BaseSketchCompl', e_sketch_compl: 'BaseSketchCompl'):
         super().__init__()
         self.score = 0 # to set
         # TODO: db content...

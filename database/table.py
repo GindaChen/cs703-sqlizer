@@ -4,8 +4,8 @@ So when the
 """
 from typing import Dict
 from query.type import Type, boolean, numeric, string
-from query.infer import BaseSketchCompl
-from query.expr import Aggregation, Value
+# from query.infer import BaseSketchCompl
+# from query.expr import Aggregation
 
 class DatabaseColumn():
     def __init__(self, name: str, table: 'DatabaseTable', type_: Type=None):
@@ -32,7 +32,8 @@ class DatabaseColumn():
     # construct a temperate DatabaseColumn from an aggreation function
     # this is used for type inference
     @classmethod
-    def aggDatabaseColumn(cls, agg_expr: Aggregation, sketch_compl: BaseSketchCompl):
+    def aggDatabaseColumn(cls, agg_expr):
+        # agg_expr is an instance of Aggregation
         # TODO: current implementation might work, but may need more tests
         return DatabaseColumn(name=f'agg_tmp', table=None, type_=agg_expr.func.output_type)
     
@@ -101,5 +102,32 @@ class Database():
     def getAllTables(self):
         return self.tables.items()
 
+# DatabaseMgr makes multiple database coexist possible
+# this is useful to testing where db is built by the test case itself
+# Do not export DatabaseMgr or DBMgr
+# use pushDatabse(), getDatabase(), and popDatabase() to access Database instance
+class DatabaseMgr():
+    def __init__(self):
+        from collections import deque
+        self.db_stack = deque()
 
-db = Database("PlaceHolder") # going to be replaced with real one...
+    def pushDatabase(self, name):
+        self.db_stack.append(Database(name))
+
+    def popDatabase(self):
+        self.db_stack.pop()
+    
+    def getDatabase(self):
+        return self.db_stack[-1]
+
+
+DBMgr = DatabaseMgr()
+
+def pushDatabase(name):
+    DBMgr.pushDatabase(name)
+
+def popDatabase():
+    DBMgr.popDatabase()
+
+def getDatabase():
+    return DBMgr.getDatabase()
