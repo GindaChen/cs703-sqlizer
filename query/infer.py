@@ -9,7 +9,7 @@ class TypeCheck():
     # if constructed from type_set, type_set must be of form: {DatabaseColumn,}
     # if constructed from col_type, col_type must be of Type
     def __init__(self, type_set: set=None, col_type: Type=None):
-        if type_set is not None == col_type is None:
+        if type_set is None == col_type is None:
             raise ValueError("type_set and col_type cannot be both None or not None")
         if col_type is not None and not isinstance(col_type, Type):
             raise TypeError(f"Invalid type of col_type: {type(col_type)}")
@@ -40,7 +40,7 @@ class TypeCheck():
             new_type_set.union(t.type_set)
         return TypeCheck(type_set=new_type_set)
 
-
+# SketchCompl should work like a dict, which map Hint to string
 class BaseSketchCompl():
     def __init__(self):
         self.confid = BaseConfid(0.)
@@ -56,6 +56,9 @@ class SingleSketchCompl(BaseSketchCompl):
         self.compl = compl
         self.confid = confid
         self.type_check = type_check
+    
+    def __getitem__(self, item: BaseConfid):
+        return self.compl.get(item)
 
 
 class ComposeSketchCompl(BaseSketchCompl):
@@ -75,12 +78,28 @@ class ComposeSketchCompl(BaseSketchCompl):
             type_set = set()
             for sc in from_list:
                 type_set.union(sc.type_check.type_set)
-            self.type_check = TypeCheck(type_set)
+            self.type_check = TypeCheck(type_set=type_set)
 
     # compose a TypeCheck from a list of SketchCompl
     @classmethod
     def typeCompose(cls, from_list):
         return TypeCheck.typeUnion([sc.type_check for sc in from_list])
 
+    def getSubCompl(self, idx: int):
+        return self.sub_compl[idx]
+
+# this is only used for unparse to indicate a None sketch completion
+# when passing this as the skecth completion for unparse, print the hole instead of what is filled
+class UnparseDefaultSketchCompl(ComposeSketchCompl):
+    def __init__(self):
+        pass
+
+    # always return self
+    def getSubCompl(self, idx: int):
+        return self
+
+# Do not export UnparseDefaultSketchCompl
+# instead, only export NoneSketchCompl
+NoneSketchCompl = UnparseDefaultSketchCompl()
 
 # The inference rules produce a list of completion sorted by confidence
