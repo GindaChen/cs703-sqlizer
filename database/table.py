@@ -7,6 +7,7 @@ from query.type import Type, boolean, numeric, string
 # from query.infer import BaseSketchCompl
 # from query.expr import Aggregation
 
+
 class DatabaseColumn():
     def __init__(self, name: str, table: 'DatabaseTable', type_: Type=None):
         self.cname = name or ""
@@ -36,7 +37,8 @@ class DatabaseColumn():
         # agg_expr is an instance of Aggregation
         # TODO: current implementation might work, but may need more tests
         return DatabaseColumn(name=f'agg_tmp', table=None, type_=agg_expr.func.output_type)
-    
+
+    @classmethod
     def valueDatabaseColumn(cls, type_):
         # TODO: current implementation might work, but may need more tests
         return DatabaseColumn(name=f'val_tmp', table=None, type_=type_)
