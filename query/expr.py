@@ -117,7 +117,7 @@ class AbstractColumns(BaseExpr):
                         skip = True
                         break
                     else:
-                        tmp_set.add(sc[col.hint])
+                        tmp_set.add(db_col)
             if not skip:
                 candidates.append(ComposeSketchCompl(candi_list))
         candidates.sort(reverse=True) # sorted by confid, from high to low
