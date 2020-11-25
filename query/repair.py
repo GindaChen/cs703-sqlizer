@@ -42,9 +42,24 @@ def add_join1(selection_expr: Selection):
     return [s]
 
 
+def add_join2(projection_expr: Projection):
+    j = Join(
+        projection_expr.abs_table,
+        Table(hint=Hint()),
+        AbstractColumns(Column(hint=Hint())),
+        AbstractColumns(Column(hint=Hint()))
+    )
+
+    s = Projection(j, projection_expr.abs_cols)
+
+    return [s]
+
+
 def repair_sketch(subpart: BaseExpr):
     repairs = []
     if isinstance(subpart, Predicate):
         repairs += add_pred(subpart)
-    if isinstance(subpart, Selection):
+    elif isinstance(subpart, Selection):
         repairs += add_join1(subpart)
+    elif isinstance(subpart, Projection):
+        repairs += add_join2(subpart)

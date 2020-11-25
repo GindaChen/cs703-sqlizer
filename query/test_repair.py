@@ -1,7 +1,7 @@
 from query import operators
 from query.base import Hint
-from query.expr import Predicate, Column, Value, Selection, Table
-from query.repair import add_pred, add_join1
+from query.expr import Predicate, Column, Value, Selection, Table, Projection, AbstractColumns
+from query.repair import add_pred, add_join1, add_join2
 
 
 def test_add_pred():
@@ -21,5 +21,16 @@ def test_add_join1():
     assert len(candidates) is 1
 
     candidate = candidates[0]
+    assert candidate.unparse() == "??[papers] JOIN ?? ON ? = ?\nWHERE (year = 2010)"
 
-    assert candidate.unparse() == "??[papers] JOIN ?? ON ? = ? \nWHERE (year = 2010)"
+
+def test_add_join2():
+    p = Projection(
+        Table("Publication"),
+        AbstractColumns(from_list=[Column("title"), Column("homepage")])
+    )
+    candidates = add_join2(p)
+    assert len(candidates) is 1
+
+    candidate = candidates[0]
+    assert candidate.unparse() == "SELECT title, homepage\nFROM Publication JOIN ?? ON ? = ?"
