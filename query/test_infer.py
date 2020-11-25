@@ -56,7 +56,7 @@ def test_inferAbstractTable():
     res = [pp.unparse(sketch_compl=sc) for sc in sc_list]
     assert len(res) == (3 * 1 + 6 * 2) + (2 * 1 + 2 * 2)
     assert "SELECT t1.c13\nFROM (SELECT t1.c13, t1.c12\n\tFROM t1)" in res
-    # assert "SELECT t2.c21\nFROM (SELECT t1.c13, t1.c12\n\tFROM t1)" not in res
+    assert "SELECT t2.c21\nFROM (SELECT t1.c13, t1.c12\n\tFROM t1)" not in res
 
     sp = Selection(p, Predicate(ops.eq, Column(hint=Hint("c_hint_4")), Value(2010)))
     psp = Projection(sp, AbstractColumns(Column(hint=Hint("c_hint_5"))))
@@ -73,7 +73,7 @@ def test_inferAbstractTable():
         AbstractColumns(from_list=[Column(hint=Hint("c_hint_9")), Column(hint=Hint("c_hint_10"))]))
     sc_list = psj.getCandidates()
     res = [psj.unparse(sketch_compl=sc) for sc in sc_list]
-    assert len(res) == 9 * 3 * 3 + 2 * (25 * 2 * 5) + 4 * 2 * 2
+    assert len(res) == 2 * (25 * 2 * 5)
     assert "SELECT t2.c21, t1.c12\nFROM t1 JOIN t2 ON t1.c12 = t2.c22\nWHERE (t1.c13 = 2010)" in res
     assert "SELECT t2.c21, t1.c12\nFROM t1 JOIN t2 ON t1.c12 = t2.c21\nWHERE (t1.c13 = 2010)" not in res
     assert "SELECT t2.c21, t1.c12\nFROM t1 JOIN t2 ON t2.c22 = t1.c12\nWHERE (t1.c13 = 2010)" not in res
