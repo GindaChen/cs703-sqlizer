@@ -24,6 +24,7 @@ class BaseConfid():
 
     def __mul__(self, other):
         return BaseConfid.compose([self, other])
+
     # used by sort()
     def __lt__(self, other):
         return self.score < other.score
@@ -34,15 +35,17 @@ class Word2VecModel:
         print("initializing word2vec model")
         data_dir = Path(__file__).parent.parent / "gensim-data"
         gensim.downloader.BASE_DIR = data_dir.as_posix()
+        gensim.downloader.base_dir = data_dir.as_posix()
         # TODO: we might need to use a larger model for OOV, or use a fastText model directly
         self.model = gensim.downloader.load('glove-twitter-25')
         print("word2vec model initialized")
 
     def similarity(self, a, b):
-        if a in self.model.wv and b in self.model.wv:
-            return self.model.similarity(a, b)
+        if a not in self.model.wv:
+            print(f"{a} or {b} is not in w2v dictionary")
+            return 0
 
-        return 0
+        return self.model.similarity(a, b)
 
 
 word2vec_model = Word2VecModel()
