@@ -11,7 +11,7 @@ from database.table import DatabaseColumn
 
 
 class BaseConfid():
-    def __init__(self, score=0):
+    def __init__(self, score: float=0):
         self.score = score
         pass
     
@@ -56,6 +56,7 @@ class PredConfid(BaseConfid):
         # TODO: db content...
         # evaluye whether pred_expr with sketch_compl can be evaluted to true
         pass
+
 
 class CastConfid(BaseConfid):
     def __init__(self, val, src_type, dst_type):

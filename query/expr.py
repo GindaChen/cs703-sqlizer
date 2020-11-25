@@ -104,6 +104,7 @@ class AbstractColumns(BaseExpr):
     # but we compose them all together
     # given the weired definition of confidence composition function, these two results might not be equivalent
     def infer(self, type_check: TypeCheck=None):
+        # TODO: optimization: filter duplication column
         assert type_check is not None
         sub_candi_list = self.candi_permute_helper(start=0, type_check=type_check)
         candidates = [ComposeSketchCompl(candi_list) for candi_list in sub_candi_list]
@@ -163,6 +164,7 @@ class Column(Entity):
             if sketch_compl == NoneSketchCompl:
                 return f'?{self.hint}'
             else:
+                assert isinstance(sketch_compl, SingleSketchCompl)
                 return sketch_compl[self.hint].name
         return self.col_name
 
@@ -279,7 +281,7 @@ class Predicate(BaseExpr):
         else: # handle eq, lt, gt, le, ge
             lhs_c, rhs_e = self.args
             for c1 in lhs_c.getCandidates(type_check):
-                lhs_c_type = next(iter(c1.type_check.type_set))
+                lhs_c_type = next(iter(c1.type_check.type_set)).type_
                 # c2 must have same type as c1; apply type filter
                 for c2 in rhs_e.getCandidates(type_check.typeFilter(lhs_c_type)):
                     candidates.append(ComposeSketchCompl([c1, c2], type_check=TypeCheck(col_type=boolean),
@@ -305,7 +307,7 @@ class Projection(AbstractTable):
         for i in range(len(self.abs_cols.col_list)):
             c = self.abs_cols.col_list[i]
             if isinstance(c, GroupAgg):
-                group_by_cols.append(c.by_col.unparse(indent, sketch_compl.getSubCompl(1).getSubCompl(i)))
+                group_by_cols.append(c.by_col.unparse(indent, sketch_compl.getSubCompl(1).getSubCompl(i).getSubCompl(1)))
         group_by_cols = set(group_by_cols) # deduplicate
         if len(group_by_cols) > 0:
             proj_body += f'\n{mkIndent(indent)}GROUP BY '
@@ -329,8 +331,12 @@ class Selection(AbstractTable):
         self.pred = pred
 
     def unparse(self, indent=0, sketch_compl: ComposeSketchCompl=NoneSketchCompl):
-        return f'{self.abs_table.unparse(indent + 1, sketch_compl.getSubCompl(0))}\n\
-            {mkIndent(indent)}WHERE {self.pred.unparse(indent + 1, sketch_compl.getSubCompl(1))}'
+        if isinstance(self.abs_table, Projection): # nested SELECT
+            abs_table_unparse_result = f'({self.abs_table.unparse(indent + 1, sketch_compl.getSubCompl(0))})'
+        else:
+            abs_table_unparse_result = self.abs_table.unparse(indent, sketch_compl.getSubCompl(0))
+        return f'{abs_table_unparse_result}\n'\
+            f'{mkIndent(indent)}WHERE {self.pred.unparse(indent + 1, sketch_compl.getSubCompl(1))}'
 
     def infer(self, type_check: TypeCheck=None):
         assert type_check is None # selection must not have any type check constraints
@@ -351,16 +357,25 @@ class Join(AbstractTable):
         self.rhs_col = rhs_col
     
     def unparse(self, indent=0, sketch_compl: ComposeSketchCompl=NoneSketchCompl):
-        return f"{self.lhs_abs_table.unparse(indent, sketch_compl.getSubCompl(0))} JOIN "\
-            f"{self.rhs_abs_table.unparse(indent, sketch_compl.getSubCompl(1))} ON "\
-            f"{self.lhs_col.unparse(indent, sketch_compl.getSubCompl(2))} = "\
-            f"{self.rhs_col.unparse(indent, sketch_compl.getSubCompl(3))}"
+        if isinstance(self.lhs_abs_table, Projection): # nested SELECT
+            lhs_abs_table_unparse_result = f'({self.lhs_abs_table.unparse(indent + 1, sketch_compl.getSubCompl(0))})'
+        else:
+            lhs_abs_table_unparse_result = self.lhs_abs_table.unparse(indent, sketch_compl.getSubCompl(0))
+        if isinstance(self.rhs_abs_table, Projection): # nested SELECT
+            rhs_abs_table_unparse_result = f'({self.rhs_abs_table.unparse(indent + 1, sketch_compl.getSubCompl(1))})'
+        else:
+            rhs_abs_table_unparse_result = self.rhs_abs_table.unparse(indent, sketch_compl.getSubCompl(1))
+        return f'{lhs_abs_table_unparse_result} JOIN '\
+            f'{rhs_abs_table_unparse_result} ON '\
+            f'{self.lhs_col.unparse(indent, sketch_compl.getSubCompl(2))} = '\
+            f'{self.rhs_col.unparse(indent, sketch_compl.getSubCompl(3))}'
 
     def infer(self, type_check: TypeCheck=None):
         assert type_check is None # join must not have any type check constraints
         candidates = []
         for c1 in self.lhs_abs_table.getCandidates():
             for c2 in self.rhs_abs_table.getCandidates():
+                # TODO: optimization: c1 and c2 are not referring to the same table
                 for c3 in self.lhs_col.getCandidates(c1.type_check):
                     join_col_lhs = next(iter(c3.type_check.type_set))
                     filter_type = join_col_lhs.type_
