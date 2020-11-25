@@ -1,4 +1,3 @@
-from database.table import Database, DatabaseTable
 
 from query.base import Hint
 from query.infer import TypeCheck, SingleSketchCompl, ComposeSketchCompl

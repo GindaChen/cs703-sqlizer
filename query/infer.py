@@ -15,11 +15,11 @@ class TypeCheck():
             raise TypeError(f"Invalid type of col_type: {type(col_type)}")
         self.type_set = type_set
         self.col_type = col_type
-
+    
     @property
     def isTypeSet(self):
         return self.type_set is not None
-
+    
     # construct a new TypeCheck with only given type exists
     # filter_type could be a Type object, or a list of Type
     def typeFilter(self, filter_type):

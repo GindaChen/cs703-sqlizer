@@ -24,7 +24,6 @@ class BaseConfid():
 
     def __mul__(self, other):
         return BaseConfid.compose([self, other])
-
     # used by sort()
     def __lt__(self, other):
         return self.score < other.score
