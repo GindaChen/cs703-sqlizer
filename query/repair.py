@@ -1,24 +1,35 @@
 # Repair tactics implementation
 # Basically some modification to AST node
-from query.expr import Entity, AbstractTable, AbstractColumns, Value, Column, Table, GroupAgg, Aggregation, Predicate, Projection, Selection, Join
+from query import operators
+from query.base import BaseExpr
+from query.expr import Entity, AbstractTable, AbstractColumns, Value, Column, Table, GroupAgg, Aggregation, Predicate, \
+    Projection, Selection, Join
 
-# TODO: Implement repair tactics below
+from query.type import string
 
-def AddPred():
-    pass
 
-def AddJoin1():
-    pass
+def add_pred(pred_expr: Predicate):
+    repairs = []
 
-def AddJoin2():
-    pass
+    func = pred_expr.func
+    lhs = pred_expr.args[0]
+    rhs = pred_expr.args[1]
 
-def AddJoin3():
-    pass
+    if func.arity is not 2:
+        return repairs
 
-def AddFunc():
-    pass
+    if isinstance(rhs, Value) and rhs.type is string:
+        str_val = rhs.val
+        for i in range(1, len(str_val)):
+            p1 = Predicate(func, lhs, Value(str_val[:i]))
+            p2 = Predicate(func, lhs, Value(str_val[i:]))
+            p = Predicate(operators.and_, p1, p2)
+            repairs.append(p)
 
-def AddCol():
-    pass
+    return repairs
 
+
+def repair_sketch(subpart: BaseExpr):
+    repairs = []
+    if isinstance(subpart, Predicate):
+        repairs += add_pred(subpart)
