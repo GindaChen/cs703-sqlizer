@@ -14,7 +14,7 @@ class BaseConfid():
     def __init__(self, score: float=0):
         self.score = score
         pass
-    
+
     @classmethod # compose a list of confidence
     def compose(cls, confids):
         p = 1
@@ -29,13 +29,30 @@ class BaseConfid():
         return self.score < other.score
 
 
+class Word2VecModel:
+    def __init__(self):
+        print("initializing word2vec model")
+        data_dir = Path(__file__).parent.parent / "gensim-data"
+        gensim.downloader.BASE_DIR = data_dir.as_posix()
+        # TODO: we might need to use a larger model for OOV, or use a fastText model directly
+        self.model = gensim.downloader.load('glove-twitter-25')
+        print("word2vec model initialized")
+
+    def similarity(self, a, b):
+        if a in self.model.wv and b in self.model.wv:
+            return self.model.similarity(a, b)
+
+        return 0
+
+
+word2vec_model = Word2VecModel()
+
+
 # sim in Fig. 6
 class HintConfid(BaseConfid):
     def __init__(self, hint: Hint, name: str):
         super().__init__()
-        gensim.downloader.BASE_DIR = Path(__file__).parent.parent / "gensim-data"
-        glove_vectors = gensim.downloader.load('glove-twitter-25')
-        self.score = glove_vectors.similarity(name, hint)
+        self.score = max(word2vec_model.similarity(name, h) for h in hint)
 
 
 class JoinConfid(BaseConfid):
@@ -60,6 +77,6 @@ class PredConfid(BaseConfid):
 class CastConfid(BaseConfid):
     def __init__(self, val, src_type, dst_type):
         super().__init__()
-        # TODO: 
+        # TODO:
         self.score = 0
         pass
