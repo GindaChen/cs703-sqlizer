@@ -375,7 +375,6 @@ class Join(AbstractTable):
         candidates = []
         for c1 in self.lhs_abs_table.getCandidates():
             for c2 in self.rhs_abs_table.getCandidates():
-                # TODO: optimization: c1 and c2 are not referring to the same table
                 if isinstance(self.lhs_abs_table, Table) and  isinstance(self.rhs_abs_table, Table):
                     if c1[self.lhs_abs_table.hint] == c2[self.rhs_abs_table.hint]:
                         continue
