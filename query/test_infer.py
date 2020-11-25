@@ -40,7 +40,7 @@ def test_inferTable():
 # the assertion for len(res) might change depending on the optimization applied to infer
 def test_inferAbstractTable():
     getSimpleDB()
-    
+
     p = Projection(Table(hint=Hint("t_hint_1")),
         AbstractColumns(from_list=[Column(hint=Hint("c_hint_1")), Column(hint=Hint("c_hint_2"))]))
     sc_list = p.getCandidates()
@@ -50,7 +50,7 @@ def test_inferAbstractTable():
     assert "SELECT t2.c21, t2.c22\nFROM t2" in res
     assert "SELECT t1.c13, t1.c12\nFROM t2" not in res
     assert "SELECT t1.c12, t2.c12\nFROM t1" not in res
-    
+
     pp = Projection(p, AbstractColumns(Column(hint=Hint("c_hint_3"))))
     sc_list = pp.getCandidates()
     res = [pp.unparse(sketch_compl=sc) for sc in sc_list]
@@ -67,7 +67,7 @@ def test_inferAbstractTable():
     assert "SELECT t1.c12\nFROM (SELECT t1.c11, t1.c12\n\tFROM t1)\nWHERE (t1.c13 = 2010)" not in res
 
     j = Join(Table(hint=Hint("t_hint_2")), Table(hint=Hint("t_hint_3")),
-        AbstractColumns(Column(hint=Hint("t_hint_6"))), AbstractColumns(Column(hint=Hint("t_hint_7"))))
+             AbstractColumns(Column(hint=Hint("t_hint_6"))), AbstractColumns(Column(hint=Hint("t_hint_7"))))
     psj = Projection(
         Selection(j, Predicate(ops.eq, Column(hint=Hint("c_hint_8")), Value(2010))),
         AbstractColumns(from_list=[Column(hint=Hint("c_hint_9")), Column(hint=Hint("c_hint_10"))]))
