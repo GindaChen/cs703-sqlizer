@@ -37,6 +37,9 @@ class Hint():
         hint_strs = ', '.join([str(i) for i in self.hint])
         return '[' + hint_strs + ']'
 
+    def __iter__(self):
+        return self.hint.__iter__()
+
 
 class BaseOperator():
     pass

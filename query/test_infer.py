@@ -9,8 +9,35 @@ from query.type import boolean, numeric, string
 import query.operators as ops
 
 
+def get_mas_db():
+    """Get the mas database in paper"""
+    pushDatabase("db_test_mas")
+
+    db = getDatabase()
+
+    db.add_table("publication")
+    publication = db["publication"]
+    publication.add_column("pid", numeric)
+    publication.add_column("title", string)
+    publication.add_column("abstract", string)
+    publication.add_column("year", numeric)
+    publication.add_column("cid", numeric)
+    publication.add_column("jid", numeric)
+
+    db.add_table("author")
+    author = db["author"]
+    author.add_column("aid", numeric)
+    author.add_column("name", string)
+    author.add_column("homepage", string)
+
+    db.add_table("writes")
+    writes = db["writes"]
+    writes.add_column("aid", numeric)
+    writes.add_column("pid", numeric)
+
+
 def getSimpleDB():
-    pushDatabase("db_test_simple");
+    pushDatabase("db_test_simple")
     db = getDatabase()
 
     db.add_table("t1")
@@ -24,6 +51,16 @@ def getSimpleDB():
     t2.add_column("c21", numeric)
     t2.add_column("c22", string)
     return db
+
+
+def test_hint_confid():
+    get_mas_db()
+    t = Table(hint=Hint("papers"))
+    sc_list = t.getCandidates()
+    res = {t.unparse(sketch_compl=sc) : sc.confid for sc in sc_list}
+    assert res["writes"] > res["publication"] > res["author"]
+    # the model thinks that `papers` is more similar to `writes` than to `publication` for some reason
+    popDatabase()
 
 
 def test_inferTable():
@@ -40,7 +77,7 @@ def test_inferTable():
 # the assertion for len(res) might change depending on the optimization applied to infer
 def test_inferAbstractTable():
     getSimpleDB()
-    
+
     p = Projection(Table(hint=Hint("t_hint_1")),
         AbstractColumns(from_list=[Column(hint=Hint("c_hint_1")), Column(hint=Hint("c_hint_2"))]))
     sc_list = p.getCandidates()
@@ -50,7 +87,7 @@ def test_inferAbstractTable():
     assert "SELECT t2.c21, t2.c22\nFROM t2" in res
     assert "SELECT t1.c13, t1.c12\nFROM t2" not in res
     assert "SELECT t1.c12, t2.c12\nFROM t1" not in res
-    
+
     pp = Projection(p, AbstractColumns(Column(hint=Hint("c_hint_3"))))
     sc_list = pp.getCandidates()
     res = [pp.unparse(sketch_compl=sc) for sc in sc_list]

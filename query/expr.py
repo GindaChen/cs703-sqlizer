@@ -203,7 +203,8 @@ class Table(AbstractTable):
         db = getDatabase()
         for table_name, table in db.getAllTables():
             table_type_check = TypeCheck(type_set=set(table.getAllColumnObjs())) # export type check info
-            candidates.append(SingleSketchCompl({self.hint: table}, HintConfid(self.hint, table_name), table_type_check))
+            candidate = SingleSketchCompl({self.hint: table}, HintConfid(self.hint, table_name), table_type_check)
+            candidates.append(candidate)
         candidates.sort(reverse=True) # sorted by confid, from high to low
         return candidates
 
