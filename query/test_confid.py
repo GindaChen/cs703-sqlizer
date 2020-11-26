@@ -68,10 +68,6 @@ def test_CastConfid():
     sc_list = ps.getCandidates()
     res = [ps.unparse(sketch_compl=sc) for sc in sc_list]
 
-    for r in res:
-        print(r)
-
-
     assert len(res) == 3 * 3
     assert "SELECT t1.c1n\nFROM t1\nWHERE (t1.c1n >= 2010)" in res
     assert "SELECT t1.c1s\nFROM t1\nWHERE (t1.c1s >= \"2010\")" in res
