@@ -13,5 +13,7 @@ eps_pred = 0.01
 
 # the confidence if a type casting is not reasonable
 eps_cast = 0.01
-
 fine_cast = 0.8
+
+# disable word2vec; this is only useful for quick testing
+skip_w2v = False

@@ -148,7 +148,7 @@ class Value(Entity):
     def unparse(self, indent=0, sketch_compl: BaseSketchCompl=NoneSketchCompl):
         actual_type = self.type
         if sketch_compl is not NoneSketchCompl:
-            assert isinstance(sketch_compl, CastConfid)
+            assert isinstance(sketch_compl, CastSketchCompl)
             actual_type = sketch_compl.dst_type
         if actual_type == string:
             return f'"{self.val}"'
