@@ -1,7 +1,7 @@
 from query import operators
 from query.base import Hint
-from query.expr import Predicate, Column, Value, Selection, Table, Projection, AbstractColumns
-from query.repair import add_pred, add_join1, add_join2, add_func
+from query.expr import Predicate, Column, Value, Selection, Table, Projection, AbstractColumns, Join
+from query.repair import add_pred, add_join1, add_join2, add_func, add_col, add_join3
 
 
 def test_add_pred():
@@ -36,6 +36,20 @@ def test_add_join2():
     assert candidate.unparse() == "SELECT title, homepage\nFROM Publication JOIN ?? ON ? = ?"
 
 
+def test_add_join3():
+    j = Join(
+        Table("TableA"),
+        Table("TableB"),
+        AbstractColumns(Column(hint=Hint("col1"))),
+        AbstractColumns(Column(hint=Hint("col2"))),
+    )
+    candidates = add_join3(j)
+    assert len(candidates) is 1
+
+    candidate = candidates[0]
+    assert candidate.unparse() == "TableA JOIN ?? ON ? = ? JOIN TableB ON ? = ?"
+
+
 def test_add_func():
     c = Column(hint=Hint("max grade"))
     candidates = add_func(c)
@@ -43,3 +57,12 @@ def test_add_func():
 
     candidate = candidates[0]
     assert candidate.unparse() == "max(?[grade])"
+
+
+def test_add_col():
+    p = Predicate(operators.eq, Column(hint=Hint("Col1")), Value("Col2"))
+    candidates = add_col(p)
+    assert len(candidates) is 1
+
+    candidate = candidates[0]
+    assert candidate.unparse() == "(?[Col1] = ?[Col2])"

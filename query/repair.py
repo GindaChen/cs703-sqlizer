@@ -99,7 +99,7 @@ def add_col(pred_expr: Predicate):
     rhs = pred_expr.args[1]
 
     if isinstance(lhs, Column) and isinstance(rhs, Value) and rhs.type is string:
-        return [Predicate(operators.and_, lhs, Column(hint=Hint(rhs.val)))]
+        return [Predicate(pred_expr.func, lhs, Column(hint=Hint(rhs.val)))]
 
     return []
 
