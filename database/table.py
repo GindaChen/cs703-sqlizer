@@ -3,10 +3,13 @@ When initializing a database, the following objects are pre-initialized.
 So when the
 """
 from typing import Dict
+from query.type import Type, boolean, numeric, string
+# from query.infer import BaseSketchCompl
+# from query.expr import Aggregation
 
 
 class DatabaseColumn():
-    def __init__(self, name: str, table: 'DatabaseTable', type_=None):
+    def __init__(self, name: str, table: 'DatabaseTable', type_: Type=None):
         self.cname = name or ""
         self.table: 'DatabaseTable' = table
         self.info = {}
@@ -24,6 +27,21 @@ class DatabaseColumn():
 
     def schema(self):
         return f'{self.type_}'
+
+    # below are just some "fake" DatabaseColumn, which is used for type checking
+
+    # construct a temperate DatabaseColumn from an aggreation function
+    # this is used for type inference
+    @classmethod
+    def aggDatabaseColumn(cls, agg_expr):
+        # agg_expr is an instance of Aggregation
+        # TODO: current implementation might work, but may need more tests
+        return DatabaseColumn(name=f'agg_tmp', table=None, type_=agg_expr.func.output_type)
+
+    @classmethod
+    def valueDatabaseColumn(cls, type_):
+        # TODO: current implementation might work, but may need more tests
+        return DatabaseColumn(name=f'val_tmp', table=None, type_=type_)
 
 
 class DatabaseTable():
@@ -54,6 +72,15 @@ class DatabaseTable():
     def __getitem__(self, item):
         return self.columns[item]
 
+    def getAllColumnNames(self):
+        return self.columns.keys()
+
+    def getAllColumns(self):
+        return self.columns.items()
+    
+    def getAllColumnObjs(self):
+        return self.columns.values()
+
 
 class Database():
     def __init__(self, name):
@@ -68,5 +95,44 @@ class Database():
         self.tables[name] = table
         return table
 
-    def __getitem__(self, item):
+    def __getitem__(self, item) -> DatabaseTable:
         return self.tables[item]
+
+    def getAllTableNames(self):
+        return self.tables.keys()
+
+    def getAllTables(self):
+        return self.tables.items()
+
+# DatabaseMgr makes multiple database coexist possible
+# this is useful to testing where db is built by the test case itself
+# Do not export DatabaseMgr or DBMgr
+# use pushDatabse(), getDatabase(), and popDatabase() to access Database instance
+class DatabaseMgr():
+    def __init__(self):
+        from collections import deque
+        self.db_stack = deque()
+
+    def pushDatabase(self, name):
+        self.db_stack.append(Database(name))
+
+    def popDatabase(self):
+        self.db_stack.pop()
+    
+    def getDatabase(self):
+        return self.db_stack[-1]
+
+
+DBMgr = DatabaseMgr()
+
+
+def pushDatabase(name):
+    DBMgr.pushDatabase(name)
+
+
+def popDatabase():
+    DBMgr.popDatabase()
+
+
+def getDatabase() -> Database:
+    return DBMgr.getDatabase()
