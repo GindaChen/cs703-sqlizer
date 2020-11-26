@@ -38,8 +38,7 @@ class HintConfid(BaseConfid):
 class JoinConfid(BaseConfid):
     def __init__(self, lhs_col: DatabaseColumn, rhs_col: DatabaseColumn):
         super().__init__()
-        db = getDatabase()
-        if db.isForeign(lhs_col, rhs_col):
+        if (lhs_col.foreign_of is rhs_col) or (rhs_col.foreign_of is lhs_col):
             self.score = 1 - param.eps_join
         else:
             self.score = param.eps_join

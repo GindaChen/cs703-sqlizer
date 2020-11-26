@@ -9,11 +9,12 @@ from query.type import Type, boolean, numeric, string
 
 
 class DatabaseColumn():
-    def __init__(self, name: str, table: 'DatabaseTable', type_: Type=None):
+    def __init__(self, name: str, table: 'DatabaseTable', type_: Type=None, foreign_of:'DatabaseColumn'=None):
         self.cname = name or ""
         self.table: 'DatabaseTable' = table
         self.info = {}
         self.type_ = type_
+        self.foreign_of = foreign_of
 
     @property
     def name(self) -> str:
@@ -58,10 +59,11 @@ class DatabaseTable():
     def __str__(self):
         return self.name
 
-    def add_column(self, name, type_=None):
+    # foreign_of is not None if the column to be added is a foreign key refers to another column
+    def add_column(self, name, type_=None, foreign_of:DatabaseColumn=None):
         if name in self.columns:
             raise KeyError(f'Table {self.name} already have column {name}.')
-        column = DatabaseColumn(name=name, table=self, type_=type_)
+        column = DatabaseColumn(name=name, table=self, type_=type_, foreign_of=foreign_of)
         self.columns[name] = column
         return column
 
@@ -103,10 +105,6 @@ class Database():
 
     def getAllTables(self):
         return self.tables.items()
-    
-    def isForeign(self, lhs: DatabaseColumn, rhs: DatabaseColumn):
-        # TODO: return true of lhs and rhs are primary/foreign key relationship
-        return False
     
     def evalPred(self, pred_expr: 'Predicate', c_sketch_compl: 'BaseSketchCompl', e_sketch_compl: 'BaseSketchCompl'):
         # TODO: return true of this predicate can be evaluated to true
