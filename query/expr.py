@@ -98,7 +98,7 @@ class AbstractColumns(BaseExpr):
     def unparse(self, indent=0, sketch_compl: ComposeSketchCompl=NoneSketchCompl):
         return ", ".join([self.col_list[i].unparse(indent, sketch_compl.getSubCompl(i))
             for i in range(len(self.col_list))])
-    
+
     # Note our implementation may be different from the paper
     # the paper compose two scores each time
     # but we compose them all together
@@ -149,7 +149,7 @@ class Value(Entity):
         if isinstance(self.val, str):
             return f'"{self.val}"'
         return str(self.val)
-    
+
     def infer(self, type_check: TypeCheck=None):
         assert type_check is not None
         possible_types = set(c.type_ for c in type_check.type_set)
@@ -166,11 +166,11 @@ class Column(Entity):
         super().__init__()
         self.col_name = col_name
         self.hint = hint
-    
+
     @property
     def isHole(self):
         return self.hint is not None # if this hole has no hint, it should at least have a Hint() with empty hint
-    
+
     def unparse(self, indent=0, sketch_compl: BaseSketchCompl=NoneSketchCompl):
         if self.isHole:
             if sketch_compl == NoneSketchCompl:
@@ -199,7 +199,7 @@ class Table(AbstractTable):
     @property
     def isHole(self):
         return self.hint is not None # if this hole has no hint, it should at least have a Hint() with empty hint
-    
+
     def unparse(self, indent=0, sketch_compl: BaseSketchCompl=NoneSketchCompl):
         if self.isHole:
             if sketch_compl == NoneSketchCompl:
@@ -248,7 +248,7 @@ class Aggregation(BaseExpr):
 
     def unparse(self, indent=0, sketch_compl: ComposeSketchCompl=NoneSketchCompl):
         return f'{self.func}({self.col.unparse(indent, sketch_compl.getSubCompl(0))})'
-    
+
     def infer(self, type_check: TypeCheck=None):
         assert type_check is not None
         candidates = []
@@ -279,7 +279,7 @@ class Predicate(BaseExpr):
             return f'({lhs} {func} {rhs})'
         else:
             raise ValueError("Incorrect arity")
-    
+
     def infer(self, type_check: TypeCheck=None):
         assert type_check is not None
         candidates = []
@@ -326,7 +326,7 @@ class Projection(AbstractTable):
             proj_body += f'\n{mkIndent(indent)}GROUP BY '
             proj_body += ', '.join(group_by_cols)
         return proj_body
-    
+
     def infer(self, type_check: TypeCheck=None):
         assert type_check is None # projection must not have any type check constraints
         candidates = []
@@ -368,7 +368,7 @@ class Join(AbstractTable):
         self.rhs_abs_table = rhs_abs_table
         self.lhs_col = lhs_col
         self.rhs_col = rhs_col
-    
+
     def unparse(self, indent=0, sketch_compl: ComposeSketchCompl=NoneSketchCompl):
         if isinstance(self.lhs_abs_table, Projection): # nested SELECT
             lhs_abs_table_unparse_result = f'({self.lhs_abs_table.unparse(indent + 1, sketch_compl.getSubCompl(0))})'
