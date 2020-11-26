@@ -8,3 +8,7 @@ def test_word_sim():
     print_ws("papers", "publication")
     print_ws("papers", "write")
     print_ws("papers", "author")
+
+
+if __name__ == '__main__':
+    test_word_sim()
