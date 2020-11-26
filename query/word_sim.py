@@ -1,7 +1,9 @@
 import urllib.request
 from pathlib import Path
 
-from gensim.models.fasttext import load_facebook_vectors
+import fasttext
+from numpy import dot
+from numpy.linalg import norm
 
 
 class WordSimilarityModel:
@@ -17,7 +19,7 @@ class WordSimilarityModel:
         self._download()
 
         print(f'loading model')
-        self.model = load_facebook_vectors(self.filename)
+        self.model = fasttext.load_model(self.filename.as_posix())
         print(f'model loaded')
 
     def _download(self):
@@ -33,8 +35,31 @@ class WordSimilarityModel:
         urllib.request.urlretrieve(url, self.filename)
         print(f'word similarity saved to {self.filename}')
 
-    def similarity(self, a, b):
-        return self.model.similarity(a, b)
+    def similarity(self, w1, w2):
+        a = self.model[w1]
+        b = self.model[w2]
+        cos_sim = dot(a, b) / (norm(a) * norm(b))  # cos similarity is in range (-1, 1)
+        return (cos_sim + 1) / 2
 
 
 ws_model = WordSimilarityModel()
+
+
+def print_ws(w1, w2):
+    print(w1, w2, ws_model.similarity(w1, w2))
+
+
+def main():
+    print_ws("hi", "hello")
+    print_ws("papers", "publication")
+    print_ws("papers", "write")
+    print_ws("papers", "author")
+    print_ws("love", "hate")
+
+    while True:
+        w1, w2 = input("please type two words:\n").split()
+        print_ws(w1, w2)
+
+
+if __name__ == '__main__':
+    main()
