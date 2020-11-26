@@ -104,10 +104,22 @@ class AbstractColumns(BaseExpr):
     # but we compose them all together
     # given the weired definition of confidence composition function, these two results might not be equivalent
     def infer(self, type_check: TypeCheck=None):
-        # TODO: optimization: filter duplication column
         assert type_check is not None
+        candidates = []
         sub_candi_list = self.candi_permute_helper(start=0, type_check=type_check)
-        candidates = [ComposeSketchCompl(candi_list) for candi_list in sub_candi_list]
+        for candi_list in sub_candi_list:
+            tmp_set = set()
+            skip = False
+            for col, sc in zip(self.col_list, candi_list):
+                if isinstance(col, Column):
+                    db_col = sc[col.hint]
+                    if db_col in tmp_set:
+                        skip = True
+                        break
+                    else:
+                        tmp_set.add(db_col)
+            if not skip:
+                candidates.append(ComposeSketchCompl(candi_list))
         candidates.sort(reverse=True) # sorted by confid, from high to low
         return candidates
 
@@ -376,7 +388,9 @@ class Join(AbstractTable):
         candidates = []
         for c1 in self.lhs_abs_table.getCandidates():
             for c2 in self.rhs_abs_table.getCandidates():
-                # TODO: optimization: c1 and c2 are not referring to the same table
+                if isinstance(self.lhs_abs_table, Table) and  isinstance(self.rhs_abs_table, Table):
+                    if c1[self.lhs_abs_table.hint] == c2[self.rhs_abs_table.hint]:
+                        continue
                 for c3 in self.lhs_col.getCandidates(c1.type_check):
                     join_col_lhs = next(iter(c3.type_check.type_set))
                     filter_type = join_col_lhs.type_
