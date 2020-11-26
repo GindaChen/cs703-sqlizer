@@ -16,7 +16,9 @@ class WordSimilarityModel:
 
         self._download()
 
+        print(f'loading model')
         self.model = load_facebook_vectors(self.filename)
+        print(f'model loaded')
 
     def _download(self):
         self.data_dir.mkdir(exist_ok=True)
@@ -25,6 +27,7 @@ class WordSimilarityModel:
 
         if self.filename.exists():
             print(f"word similarity model exists at {self.filename}, skip downloading")
+            return
 
         print(f'downloading word similarity model to {self.filename}')
         urllib.request.urlretrieve(url, self.filename)
