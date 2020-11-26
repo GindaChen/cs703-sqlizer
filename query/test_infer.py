@@ -1,4 +1,3 @@
-
 from query.base import Hint
 from query.infer import TypeCheck, SingleSketchCompl, ComposeSketchCompl
 from query.expr import Entity, AbstractTable, AbstractColumns, Value, Column, \

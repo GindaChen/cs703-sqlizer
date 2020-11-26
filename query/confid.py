@@ -6,7 +6,7 @@
 from query.base import Hint
 from database.table import DatabaseColumn, getDatabase
 from query.type import Type, boolean, numeric, string
-import query.param as param
+import query.params as params
 
 class BaseConfid():
     def __init__(self, score: float=0):
@@ -25,6 +25,9 @@ class BaseConfid():
     # used by sort()
     def __lt__(self, other):
         return self.score < other.score
+    
+    def __str__(self):
+        return f'confid: {self.score}'
 
 
 # sim in Fig. 6
@@ -39,9 +42,9 @@ class JoinConfid(BaseConfid):
     def __init__(self, lhs_col: DatabaseColumn, rhs_col: DatabaseColumn):
         super().__init__()
         if (lhs_col.foreign_of is rhs_col) or (rhs_col.foreign_of is lhs_col):
-            self.score = 1 - param.eps_join
+            self.score = 1 - params.eps_join
         else:
-            self.score = param.eps_join
+            self.score = params.eps_join
 
 
 class PredConfid(BaseConfid):
@@ -49,9 +52,9 @@ class PredConfid(BaseConfid):
         super().__init__()
         db = getDatabase()
         if db.evalPred(pred_expr, c_sketch_compl, e_sketch_compl):
-            self.score = 1 - param.eps_pred
+            self.score = 1 - params.eps_pred
         else:
-            self.score = param.eps_pred
+            self.score = params.eps_pred
 
 
 class CastConfid(BaseConfid):
@@ -61,16 +64,16 @@ class CastConfid(BaseConfid):
             self.score = 1 # cast to the same type should always be okay
             return
         if src_type == boolean or dst_type == boolean:
-            self.score = param.eps_cast # it doesn't really make sense to case boolean
+            self.score = params.eps_cast # it doesn't really make sense to case boolean
             return
         if src_type == numeric and dst_type == string:
-            self.score = param.fine_cast
+            self.score = params.fine_cast
             return
         if src_type == string and dst_type == numeric:
-            self.score = param.fine_cast
+            self.score = params.fine_cast
             try:
                 int(val)
             except ValueError: # fail to cast string to int
-                self.score = param.eps_cast
+                self.score = params.eps_cast
             return
         raise TypeError(f"Unknown type: src_type: {type(src_type)}, dst_type: {type(dst_type)}")
