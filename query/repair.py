@@ -4,6 +4,7 @@ from query import operators
 from query.base import BaseExpr, Hint
 from query.expr import Entity, AbstractTable, AbstractColumns, Value, Column, Table, GroupAgg, Aggregation, Predicate, \
     Projection, Selection, Join
+from query.operators import all_aggregates
 
 from query.type import string
 
@@ -74,12 +75,20 @@ def add_join3(join_expr: Join):
 
     return [j2]
 
+
 def add_func(column: Column):
     if column.hint is None:
         return []
+
+    repairs = []
+
     for h in column.hint:
+        maybe_func, new_hint = h.split(maxsplit=1)
+        for f in all_aggregates:
+            if f.name == maybe_func: # TODO: replace with word similarity
+                repairs += [Aggregation(f, Column(hint=Hint(new_hint)))]
 
-
+    return repairs
 
 
 def add_col(pred_expr: Predicate):
@@ -107,3 +116,5 @@ def repair_sketch(subpart: BaseExpr):
         repairs += add_join3(subpart)
     if isinstance(subpart, Predicate):
         repairs += add_col(subpart)
+    if isinstance(subpart, Column):
+        repairs += add_func(subpart)

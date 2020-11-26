@@ -1,7 +1,7 @@
 from query import operators
 from query.base import Hint
 from query.expr import Predicate, Column, Value, Selection, Table, Projection, AbstractColumns
-from query.repair import add_pred, add_join1, add_join2
+from query.repair import add_pred, add_join1, add_join2, add_func
 
 
 def test_add_pred():
@@ -34,3 +34,12 @@ def test_add_join2():
 
     candidate = candidates[0]
     assert candidate.unparse() == "SELECT title, homepage\nFROM Publication JOIN ?? ON ? = ?"
+
+
+def test_add_func():
+    c = Column(hint=Hint("max grade"))
+    candidates = add_func(c)
+    assert len(candidates) is 1
+
+    candidate = candidates[0]
+    assert candidate.unparse() == "max(?[grade])"
