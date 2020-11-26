@@ -5,6 +5,7 @@
 
 from query.base import Hint
 from database.table import DatabaseColumn, getDatabase
+from query.type import Type, boolean, numeric, string
 import query.param as param
 
 class BaseConfid():
@@ -55,8 +56,22 @@ class PredConfid(BaseConfid):
 
 
 class CastConfid(BaseConfid):
-    def __init__(self, val, src_type, dst_type):
+    def __init__(self, val, src_type: Type, dst_type: Type):
         super().__init__()
-        # TODO:
-        self.score = 0
-        pass
+        if src_type == dst_type:
+            self.score = 1 # cast to the same type should always be okay
+            return
+        if src_type == boolean or dst_type == boolean:
+            self.score = param.eps_cast # it doesn't really make sense to case boolean
+            return
+        if src_type == numeric and dst_type == string:
+            self.score = param.fine_cast
+            return
+        if src_type == string and dst_type == numeric:
+            self.score = param.fine_cast
+            try:
+                int(val)
+            except ValueError: # fail to cast string to int
+                self.score = param.eps_cast
+            return
+        raise TypeError(f"Unknown type: src_type: {type(src_type)}, dst_type: {type(dst_type)}")

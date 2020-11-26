@@ -10,3 +10,8 @@ eps_join = 0.01
 
 # the confidence if a predicate is always false in the given database
 eps_pred = 0.01
+
+# the confidence if a type casting is not reasonable
+eps_cast = 0.01
+
+fine_cast = 0.8
