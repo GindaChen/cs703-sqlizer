@@ -103,6 +103,15 @@ class Database():
 
     def getAllTables(self):
         return self.tables.items()
+    
+    def isForeign(self, lhs: DatabaseColumn, rhs: DatabaseColumn):
+        # TODO: return true of lhs and rhs are primary/foreign key relationship
+        return False
+    
+    def evalPred(self, pred_expr: 'Predicate', c_sketch_compl: 'BaseSketchCompl', e_sketch_compl: 'BaseSketchCompl'):
+        # TODO: return true of this predicate can be evaluated to true
+        return False
+
 
 # DatabaseMgr makes multiple database coexist possible
 # this is useful to testing where db is built by the test case itself

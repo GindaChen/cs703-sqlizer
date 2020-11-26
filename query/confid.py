@@ -4,8 +4,8 @@
 # - Database contents: Our approach also uses the contents of the database when assigning scores to queries. For instance, a candidate term sigma_phi(T) is relatively unlikely to occur in the target query if there are no entries in relation T satisfying predicate phi
 
 from query.base import Hint
-from database.table import DatabaseColumn
-
+from database.table import DatabaseColumn, getDatabase
+import query.param as param
 
 class BaseConfid():
     def __init__(self, score: float=0):
@@ -37,20 +37,21 @@ class HintConfid(BaseConfid):
 class JoinConfid(BaseConfid):
     def __init__(self, lhs_col: DatabaseColumn, rhs_col: DatabaseColumn):
         super().__init__()
-        self.score = 0 # to set
-        # TODO: foregin key...
-        # return 1 - eps,   if c 1 is a foreign key referring to c 2 (or vice versa)
-        # return eps,       otherwise
-        pass
+        db = getDatabase()
+        if db.isForeign(lhs_col, rhs_col):
+            self.score = 1 - param.eps_join
+        else:
+            self.score = param.eps_join
 
 
 class PredConfid(BaseConfid):
     def __init__(self, pred_expr: 'Predicate', c_sketch_compl: 'BaseSketchCompl', e_sketch_compl: 'BaseSketchCompl'):
         super().__init__()
-        self.score = 0 # to set
-        # TODO: db content...
-        # evaluye whether pred_expr with sketch_compl can be evaluted to true
-        pass
+        db = getDatabase()
+        if db.evalPred(pred_expr, c_sketch_compl, e_sketch_compl):
+            self.score = 1 - param.eps_pred
+        else:
+            self.score = param.eps_pred
 
 
 class CastConfid(BaseConfid):
