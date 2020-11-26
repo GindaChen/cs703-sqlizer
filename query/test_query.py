@@ -58,7 +58,7 @@ def test_AbstractTable():
     ps = Projection(s, AbstractColumns(Column("author")))
     assert ps.unparse() == "SELECT author\nFROM Publication\nWHERE (year = 2010)"
 
-    j = Join(Table("Publication"), Table("Conference"), AbstractColumns(Column("Publication.cid")), AbstractColumns(Column("Conference.cid")))
+    j = Join(Table("Publication"), Table("Conference"), Column("Publication.cid"), Column("Conference.cid"))
     assert j.unparse() == "Publication JOIN Conference ON Publication.cid = Conference.cid"
 
     psj = Projection(

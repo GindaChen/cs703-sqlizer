@@ -350,7 +350,7 @@ class Selection(AbstractTable):
 
 
 class Join(AbstractTable):
-    def __init__(self, lhs_abs_table: AbstractTable, rhs_abs_table: AbstractTable, lhs_col: AbstractColumns, rhs_col: AbstractColumns):
+    def __init__(self, lhs_abs_table: AbstractTable, rhs_abs_table: AbstractTable, lhs_col: Column, rhs_col: Column):
         super().__init__()
         self.lhs_abs_table = lhs_abs_table
         self.rhs_abs_table = rhs_abs_table

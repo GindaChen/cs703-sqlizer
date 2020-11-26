@@ -34,8 +34,8 @@ def add_join1(selection_expr: Selection):
     j = Join(
         selection_expr.abs_table,
         Table(hint=Hint()),
-        AbstractColumns(Column(hint=Hint())),
-        AbstractColumns(Column(hint=Hint()))
+        Column(hint=Hint()),
+        Column(hint=Hint())
     )
 
     s = Selection(j, selection_expr.pred)
@@ -47,8 +47,8 @@ def add_join2(projection_expr: Projection):
     j = Join(
         projection_expr.abs_table,
         Table(hint=Hint()),
-        AbstractColumns(Column(hint=Hint())),
-        AbstractColumns(Column(hint=Hint()))
+        Column(hint=Hint()),
+        Column(hint=Hint())
     )
 
     s = Projection(j, projection_expr.abs_cols)
@@ -62,15 +62,15 @@ def add_join3(join_expr: Join):
     j1 = Join(
         join_expr.lhs_abs_table,
         Table(hint=Hint()),
-        AbstractColumns(Column(hint=Hint())),
-        AbstractColumns(Column(hint=Hint()))
+        Column(hint=Hint()),
+        Column(hint=Hint())
     )
 
     j2 = Join(
         j1,
         join_expr.rhs_abs_table,
-        AbstractColumns(Column(hint=Hint())),
-        AbstractColumns(Column(hint=Hint()))
+        Column(hint=Hint()),
+        Column(hint=Hint())
     )
 
     return [j2]

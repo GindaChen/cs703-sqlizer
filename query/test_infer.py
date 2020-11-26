@@ -103,8 +103,12 @@ def test_inferAbstractTable():
     assert "SELECT t1.c12\nFROM (SELECT t1.c11, t1.c12\n\tFROM t1)\nWHERE (t1.c12 = 2010)" in res
     assert "SELECT t1.c12\nFROM (SELECT t1.c11, t1.c12\n\tFROM t1)\nWHERE (t1.c13 = 2010)" not in res
 
-    j = Join(Table(hint=Hint("t_hint_2")), Table(hint=Hint("t_hint_3")),
-             AbstractColumns(Column(hint=Hint("t_hint_6"))), AbstractColumns(Column(hint=Hint("t_hint_7"))))
+    j = Join(
+        Table(hint=Hint("t_hint_2")),
+        Table(hint=Hint("t_hint_3")),
+        Column(hint=Hint("t_hint_6")),
+        Column(hint=Hint("t_hint_7"))
+    )
     psj = Projection(
         Selection(j, Predicate(ops.eq, Column(hint=Hint("c_hint_8")), Value(2010))),
         AbstractColumns(from_list=[Column(hint=Hint("c_hint_9")), Column(hint=Hint("c_hint_10"))]))

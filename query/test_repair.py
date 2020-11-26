@@ -40,8 +40,8 @@ def test_add_join3():
     j = Join(
         Table("TableA"),
         Table("TableB"),
-        AbstractColumns(Column(hint=Hint("col1"))),
-        AbstractColumns(Column(hint=Hint("col2"))),
+        Column(hint=Hint("col1")),
+        Column(hint=Hint("col2")),
     )
     candidates = add_join3(j)
     assert len(candidates) is 1
