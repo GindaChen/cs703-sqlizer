@@ -43,23 +43,3 @@ class WordSimilarityModel:
 
 
 ws_model = WordSimilarityModel()
-
-
-def print_ws(w1, w2):
-    print(w1, w2, ws_model.similarity(w1, w2))
-
-
-def main():
-    print_ws("hi", "hello")
-    print_ws("papers", "publication")
-    print_ws("papers", "write")
-    print_ws("papers", "author")
-    print_ws("love", "hate")
-
-    while True:
-        w1, w2 = input("please type two words:\n").split()
-        print_ws(w1, w2)
-
-
-if __name__ == '__main__':
-    main()
