@@ -95,7 +95,7 @@ class Database():
         self.tables[name] = table
         return table
 
-    def __getitem__(self, item):
+    def __getitem__(self, item) -> DatabaseTable:
         return self.tables[item]
 
     def getAllTableNames(self):
@@ -125,11 +125,14 @@ class DatabaseMgr():
 
 DBMgr = DatabaseMgr()
 
+
 def pushDatabase(name):
     DBMgr.pushDatabase(name)
+
 
 def popDatabase():
     DBMgr.popDatabase()
 
-def getDatabase():
+
+def getDatabase() -> Database:
     return DBMgr.getDatabase()

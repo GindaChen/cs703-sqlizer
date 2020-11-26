@@ -131,3 +131,6 @@ dmypy.json
 # IntelliJ Configs
 .idea
 .DS_Store
+
+
+gensim-data
