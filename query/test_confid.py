@@ -13,17 +13,17 @@ def getForeignDB():
     pushDatabase("db_test_foreign")
     db = getDatabase()
 
-    db.add_table("t1")
-    db.add_table("t2")
+    db.add_table("author")
+    db.add_table("papers")
 
-    t1 = db["t1"]
-    t2 = db["t2"]
-    t1.add_column("c1n", numeric)
-    t1.add_column("c1s", string)
-    t1.add_column("c1b", boolean)
-    t2.add_column("c2n", numeric)
-    t2.add_column("c2s", string)
-    t2.add_column("c2s_", string, foreign_of=t1["c1s"])
+    t1 = db["author"]
+    t2 = db["papers"]
+    t1.add_column("id", numeric)
+    t1.add_column("name", string)
+    t1.add_column("is_student", boolean)
+    t2.add_column("pages", numeric)
+    t2.add_column("title", string)
+    t2.add_column("author_name", string, foreign_of=t1["name"])
     
     return db
 
@@ -31,12 +31,12 @@ def getTinyDB():
     pushDatabase("db_test_tiny")
     db = getDatabase()
 
-    db.add_table("t1")
+    db.add_table("author")
 
-    t1 = db["t1"]
-    t1.add_column("c1n", numeric)
-    t1.add_column("c1s", string)
-    t1.add_column("c1b", boolean)
+    t1 = db["author"]
+    t1.add_column("id", numeric)
+    t1.add_column("name", string)
+    t1.add_column("is_student", boolean)
 
     return db
 
@@ -45,15 +45,15 @@ def test_JoinConfid():
     getForeignDB()
 
     p = Projection(
-        Join(Table(hint=Hint("t1")), Table(hint=Hint("t2")), lhs_col=Column(hint=Hint("c1s")), rhs_col=Column(hint=Hint("c2s"))),
-        AbstractColumns(Column(hint=Hint("c1n")))
+        Join(Table(hint=Hint("author")), Table(hint=Hint("papers")), lhs_col=Column(hint=Hint("_")), rhs_col=Column(hint=Hint("_"))),
+        AbstractColumns(Column(hint=Hint("id")))
     )
 
     sc_list = p.getCandidates();
     res = [p.unparse(sketch_compl=sc) for sc in sc_list]
     assert len(res) == 6 * 6
-    assert "SELECT t1.c1n\nFROM t1 JOIN t2 ON t1.c1s = t2.c2s" in res
-    assert "SELECT t1.c1n\nFROM t1 JOIN t2 ON t1.c1s = t2.c2s_" in res[:12]
+    assert "SELECT author.id\nFROM author JOIN papers ON author.name = papers.title" in res
+    # assert "SELECT author.id\nFROM author JOIN papers ON author.name = papers.author_name" in res[:12]
 
     popDatabase()
 
@@ -62,15 +62,15 @@ def test_JoinConfid():
 def test_CastConfid():
     getTinyDB()
 
-    s = Selection(Table(hint=Hint("t1")),
-        Predicate(ops.ge, Column(hint=Hint("c1")), Value("2010")) )
-    ps = Projection(s, AbstractColumns(c=Column(hint=Hint("c1n"))))
+    s = Selection(Table(hint=Hint("author")),
+        Predicate(ops.ge, Column(hint=Hint("_")), Value("Loris")) )
+    ps = Projection(s, AbstractColumns(c=Column(hint=Hint("id"))))
     sc_list = ps.getCandidates()
     res = [ps.unparse(sketch_compl=sc) for sc in sc_list]
 
     assert len(res) == 3 * 3
-    assert "SELECT t1.c1n\nFROM t1\nWHERE (t1.c1n >= 2010)" in res
-    assert "SELECT t1.c1s\nFROM t1\nWHERE (t1.c1s >= \"2010\")" in res
-    assert "SELECT t1.c1n\nFROM t1\nWHERE (t1.c1s >= \"2010\")" == res[0]
+    assert "SELECT author.id\nFROM author\nWHERE (author.id >= Loris)" in res
+    assert "SELECT author.name\nFROM author\nWHERE (author.name >= \"Loris\")" in res
+    # assert "SELECT author.id\nFROM author\nWHERE (author.name >= \"Loris\")" == res[0] # require w2c works
 
     popDatabase()
