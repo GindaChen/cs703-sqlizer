@@ -21,11 +21,19 @@ def add_pred(pred_expr: Predicate):
 
     if isinstance(lhs, Column) and isinstance(rhs, Value) and rhs.type is string:
         str_val = rhs.val
-        for i in range(1, len(str_val)):
+        indices = [i for i, c in enumerate(str_val) if not c.isalnum()]
+
+        for i in indices:
             p1 = Predicate(func, lhs, Value(str_val[:i]))
-            p2 = Predicate(func, lhs, Value(str_val[i:]))
-            p = Predicate(operators.and_, p1, p2)
+            p2 = Predicate(func, lhs, Value(str_val[i + 1:]))
+            p = Predicate(operators.and_, p1, p2)  # TODO: we only consider two-way split for now
             repairs.append(p)
+
+        # for i in range(1, len(str_val)):
+        #     p1 = Predicate(func, lhs, Value(str_val[:i]))
+        #     p2 = Predicate(func, lhs, Value(str_val[i:]))
+        #     p = Predicate(operators.and_, p1, p2)
+        #     repairs.append(p)
 
     return repairs
 

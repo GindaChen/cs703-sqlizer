@@ -5,14 +5,14 @@ from query.repair import add_pred, add_join1, add_join2, add_func, add_col, add_
 
 
 def test_add_pred():
-    p = Predicate(operators.eq, Column(hint=Hint()), Value("OOPSLA"))
+    p = Predicate(operators.eq, Column(hint=Hint()), Value("TEST OOPSLA 2020"))
     candidates = add_pred(p)
-    assert len(candidates) is len("OOPSLA") - 1
+    assert len(candidates) is 2
 
     res = [c.unparse() for c in candidates]
 
-    assert '((? = "O") AND (? = "OPSLA"))' in res
-    assert '((? = "OOPSL") AND (? = "A"))' in res
+    assert '((? = "TEST") AND (? = "OOPSLA 2020"))' in res
+    assert '((? = "TEST OOPSLA") AND (? = "2020"))' in res
 
 
 def test_add_join1():
