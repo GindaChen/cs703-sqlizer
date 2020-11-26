@@ -2,9 +2,6 @@
 # - Names of schema elements: Since our query sketches contain natural language hints for each hole, we can utilize table and column names in the database schema to assign confidence scores.
 # - Foreign and primary keys: Since foreign keys provide links between data in two different database tables, join operations that involve foreign keys have a higher chance of being the intended term.
 # - Database contents: Our approach also uses the contents of the database when assigning scores to queries. For instance, a candidate term sigma_phi(T) is relatively unlikely to occur in the target query if there are no entries in relation T satisfying predicate phi
-from pathlib import Path
-
-import gensim.downloader
 
 from query.base import Hint
 from database.table import DatabaseColumn
@@ -30,32 +27,12 @@ class BaseConfid():
         return self.score < other.score
 
 
-class Word2VecModel:
-    def __init__(self):
-        print("initializing word2vec model")
-        data_dir = Path(__file__).parent.parent / "gensim-data"
-        gensim.downloader.BASE_DIR = data_dir.as_posix()
-        gensim.downloader.base_dir = data_dir.as_posix()
-        # TODO: we might need to use a larger model for OOV, or use a fastText model directly
-        self.model = gensim.downloader.load('glove-twitter-25')
-        print("word2vec model initialized")
-
-    def similarity(self, a, b):
-        if a not in self.model.wv:
-            print(f"{a} or {b} is not in w2v dictionary")
-            return 0
-
-        return self.model.similarity(a, b)
-
-
-word2vec_model = Word2VecModel()
-
-
 # sim in Fig. 6
 class HintConfid(BaseConfid):
     def __init__(self, hint: Hint, name: str):
         super().__init__()
-        self.score = max(word2vec_model.similarity(name, h) for h in hint)
+        from query.word_sim import ws_model
+        self.score = max(ws_model.similarity(name, h) for h in hint)
 
 
 class JoinConfid(BaseConfid):
