@@ -10,7 +10,6 @@ from database.table import DatabaseColumn
 class BaseConfid():
     def __init__(self, score: float=0):
         self.score = score
-        pass
 
     @classmethod # compose a list of confidence
     def compose(cls, confids):
