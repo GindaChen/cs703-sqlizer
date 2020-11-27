@@ -1,9 +1,9 @@
 # Inference rules implementation
 # Fig 7 and Fig 8
 
-from query.confid import BaseConfid
+from query.confid import BaseConfid, CastConfid
 from query.type import Type
-
+from database.table import DatabaseColumn
 
 class TypeCheck():
     # if constructed from type_set, type_set must be of form: {DatabaseColumn,}
@@ -60,6 +60,15 @@ class SingleSketchCompl(BaseSketchCompl):
     
     def __getitem__(self, item: BaseConfid):
         return self.compl.get(item)
+
+
+class CastSketchCompl(BaseSketchCompl):
+    def __init__(self, val, src_type: Type, dst_type: Type):
+        super().__init__()
+        self.src_type = src_type
+        self.dst_type = dst_type
+        self.confid = CastConfid(val, src_type, dst_type)
+        self.type_check = TypeCheck({DatabaseColumn.valueDatabaseColumn(dst_type)})
 
 
 class ComposeSketchCompl(BaseSketchCompl):

@@ -4,7 +4,7 @@ from pathlib import Path
 import fasttext
 from numpy import dot
 from numpy.linalg import norm
-
+import query.params as params
 
 class WordSimilarityModel:
     def __init__(
@@ -12,6 +12,9 @@ class WordSimilarityModel:
         model_name="cc.en.50.bin",  # see: http://pages.cs.wisc.edu/~szhong/fasttext
         data_dir=Path(__file__).parent / "word_sim_model",
     ):
+        if params.skip_w2v:
+            print('skip word2vec')
+            return
         self.data_dir = data_dir
         self.model_name = model_name
         self.filename = data_dir / model_name
@@ -36,6 +39,8 @@ class WordSimilarityModel:
         print(f'word similarity saved to {self.filename}')
 
     def similarity(self, w1, w2):
+        if params.skip_w2v:
+            return 1.0
         a = self.model[w1]
         b = self.model[w2]
         cos_sim = dot(a, b) / (norm(a) * norm(b))  # cos similarity is in range (-1, 1)

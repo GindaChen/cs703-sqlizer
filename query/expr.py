@@ -25,7 +25,7 @@ import query.operators as ops
 from query.type import boolean, numeric, string
 from database.table import DatabaseColumn, DatabaseTable
 from query.base import BaseExpr, AggregateFunc, Operator, Hint
-from query.infer import BaseSketchCompl, SingleSketchCompl, ComposeSketchCompl, NoneSketchCompl, TypeCheck
+from query.infer import BaseSketchCompl, SingleSketchCompl, CastSketchCompl, ComposeSketchCompl, NoneSketchCompl, TypeCheck
 from query.confid import BaseConfid, HintConfid, JoinConfid, PredConfid, CastConfid
 from database.table import getDatabase
 
@@ -146,15 +146,18 @@ class Value(Entity):
         self.val = val
 
     def unparse(self, indent=0, sketch_compl: BaseSketchCompl=NoneSketchCompl):
-        if isinstance(self.val, str):
+        actual_type = self.type
+        if sketch_compl is not NoneSketchCompl:
+            assert isinstance(sketch_compl, CastSketchCompl)
+            actual_type = sketch_compl.dst_type
+        if actual_type == string:
             return f'"{self.val}"'
         return str(self.val)
 
     def infer(self, type_check: TypeCheck=None):
         assert type_check is not None
         possible_types = set(c.type_ for c in type_check.type_set)
-        candidates = [SingleSketchCompl({}, confid=CastConfid(self.val, self.type, t),
-            type_check=TypeCheck({DatabaseColumn.valueDatabaseColumn(t)}))
+        candidates = [CastSketchCompl(self.val, self.type, t)
             for t in possible_types]
         candidates.sort(reverse=True)
         return candidates
@@ -173,7 +176,7 @@ class Column(Entity):
 
     def unparse(self, indent=0, sketch_compl: BaseSketchCompl=NoneSketchCompl):
         if self.isHole:
-            if sketch_compl == NoneSketchCompl:
+            if sketch_compl is NoneSketchCompl:
                 return f'?{self.hint}'
             else:
                 assert isinstance(sketch_compl, SingleSketchCompl)
@@ -202,7 +205,7 @@ class Table(AbstractTable):
 
     def unparse(self, indent=0, sketch_compl: BaseSketchCompl=NoneSketchCompl):
         if self.isHole:
-            if sketch_compl == NoneSketchCompl:
+            if sketch_compl is NoneSketchCompl:
                 return f'??{self.hint}'
             else:
                 return sketch_compl[self.hint].name

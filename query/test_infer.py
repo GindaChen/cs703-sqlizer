@@ -1,4 +1,3 @@
-
 from query.base import Hint
 from query.infer import TypeCheck, SingleSketchCompl, ComposeSketchCompl
 from query.expr import Entity, AbstractTable, AbstractColumns, Value, Column, \
@@ -100,7 +99,7 @@ def test_inferAbstractTable():
     sc_list = psp.getCandidates()
     res = [psp.unparse(sketch_compl=sc) for sc in sc_list]
     assert len(res) == (6 * 2 * 2) + (2 * 2 * 2)
-    assert "SELECT t1.c12\nFROM (SELECT t1.c11, t1.c12\n\tFROM t1)\nWHERE (t1.c12 = 2010)" in res
+    assert "SELECT t1.c12\nFROM (SELECT t1.c11, t1.c12\n\tFROM t1)\nWHERE (t1.c12 = \"2010\")" in res
     assert "SELECT t1.c12\nFROM (SELECT t1.c11, t1.c12\n\tFROM t1)\nWHERE (t1.c13 = 2010)" not in res
 
     j = Join(
@@ -115,9 +114,9 @@ def test_inferAbstractTable():
     sc_list = psj.getCandidates()
     res = [psj.unparse(sketch_compl=sc) for sc in sc_list]
     assert len(res) == 2 * (20 * 2 * 5)
-    assert "SELECT t2.c21, t1.c12\nFROM t1 JOIN t2 ON t1.c12 = t2.c22\nWHERE (t1.c13 = 2010)" in res
-    assert "SELECT t2.c21, t1.c12\nFROM t1 JOIN t2 ON t1.c12 = t2.c21\nWHERE (t1.c13 = 2010)" not in res
-    assert "SELECT t2.c21, t1.c12\nFROM t1 JOIN t2 ON t2.c22 = t1.c12\nWHERE (t1.c13 = 2010)" not in res
+    assert "SELECT t2.c21, t1.c12\nFROM t1 JOIN t2 ON t1.c12 = t2.c22\nWHERE (t1.c11 = 2010)" in res
+    assert "SELECT t2.c21, t1.c12\nFROM t1 JOIN t2 ON t1.c12 = t2.c21\nWHERE (t1.c11 = 2010)" not in res
+    assert "SELECT t2.c21, t1.c12\nFROM t1 JOIN t2 ON t2.c22 = t1.c12\nWHERE (t1.c11 = 2010)" not in res
 
     popDatabase()
 
@@ -135,5 +134,20 @@ def test_inferGroupAgg():
     assert "SELECT max(t1.c11), t1.c12\nFROM t1\nGROUP BY t1.c13" in res
     assert "SELECT max(t1.c11), t1.c12\nFROM t1\nGROUP BY t2.c21" not in res
     assert "SELECT max(t1.c13), t1.c12\nFROM t1\nGROUP BY t1.c13" not in res
+
+    popDatabase()
+
+def test_inferValue():
+    getSimpleDB()
+
+    s = Selection(Table(hint=Hint("t_hint_1")),
+        Predicate(ops.ge, Column(hint=Hint("c_hint_1")), Value("2010")) )
+    ps = Projection(s, AbstractColumns(c=Column(hint=Hint("c_hint_2"))))
+    sc_list = ps.getCandidates()
+    res = [ps.unparse(sketch_compl=sc) for sc in sc_list]
+
+    assert len(res) == 3 * 3 + 2 * 2
+    assert "SELECT t1.c13\nFROM t1\nWHERE (t1.c11 >= 2010)" in res
+    assert "SELECT t1.c13\nFROM t1\nWHERE (t1.c12 >= \"2010\")" in res
 
     popDatabase()
