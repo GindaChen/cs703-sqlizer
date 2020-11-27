@@ -25,7 +25,7 @@ class BaseConfid():
     # used by sort()
     def __lt__(self, other):
         return self.score < other.score
-    
+
     def __str__(self):
         return f'confid: {self.score}'
 
@@ -35,7 +35,7 @@ class HintConfid(BaseConfid):
     def __init__(self, hint: Hint, name: str):
         super().__init__()
         from query.word_sim import ws_model
-        self.score = max(ws_model.similarity(name, h) for h in hint)
+        self.score = max((ws_model.similarity(name, h) for h in hint), default=0.5)
 
 
 class JoinConfid(BaseConfid):

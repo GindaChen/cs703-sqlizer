@@ -56,9 +56,8 @@ def test_hint_confid():
     get_mas_db()
     t = Table(hint=Hint("papers"))
     sc_list = t.getCandidates()
-    res = {t.unparse(sketch_compl=sc) : sc.confid for sc in sc_list}
-    assert res["writes"] > res["publication"] > res["author"]
-    # the model thinks that `papers` is more similar to `writes` than to `publication` for some reason
+    res = {t.unparse(sketch_compl=sc): sc.confid for sc in sc_list}
+    assert res["publication"] > res["author"] > res["writes"]
     popDatabase()
 
 

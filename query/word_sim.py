@@ -43,6 +43,8 @@ class WordSimilarityModel:
             return 1.0
         a = self.model[w1]
         b = self.model[w2]
+        if norm(a) == 0 or norm(b) == 0:
+            return 0.5  # interestingly, the model gives a zero vector for `_`
         cos_sim = dot(a, b) / (norm(a) * norm(b))  # cos similarity is in range (-1, 1)
         return (cos_sim + 1) / 2
 
