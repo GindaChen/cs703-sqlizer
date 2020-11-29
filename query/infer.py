@@ -15,11 +15,11 @@ class TypeCheck():
             raise TypeError(f"Invalid type of col_type: {type(col_type)}")
         self.type_set = type_set
         self.col_type = col_type
-    
+
     @property
     def isTypeSet(self):
         return self.type_set is not None
-    
+
     # construct a new TypeCheck with only given type exists
     # filter_type could be a Type object, or a list of Type
     def typeFilter(self, filter_type):
@@ -31,7 +31,7 @@ class TypeCheck():
             if c.type_ in filter_type:
                 new_type_set.add(c)
         return TypeCheck(type_set=new_type_set)
-    
+
     # construct a new TypeCheck from union a TypeCheck list
     @classmethod
     def typeUnion(cls, from_list):
@@ -40,9 +40,12 @@ class TypeCheck():
             new_type_set = new_type_set.union(t.type_set)
         return TypeCheck(type_set=new_type_set)
 
+    def __str__(self):
+        return f"col_type={self.col_type} type_set={self.type_set}"
+
 
 # SketchCompl should work like a dict, which map Hint to string
-class BaseSketchCompl():
+class BaseSketchCompl:
     def __init__(self):
         self.confid = None
 
@@ -57,9 +60,12 @@ class SingleSketchCompl(BaseSketchCompl):
         self.compl = compl
         self.confid = confid
         self.type_check = type_check
-    
+
     def __getitem__(self, item: BaseConfid):
         return self.compl.get(item)
+
+    def __str__(self):
+        return f"confid={self.confid.score}, compl={self.compl}"
 
 
 class CastSketchCompl(BaseSketchCompl):

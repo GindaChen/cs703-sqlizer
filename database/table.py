@@ -26,6 +26,9 @@ class DatabaseColumn():
     def __str__(self):
         return self.name
 
+    def __repr__(self):
+        return self.__str__()
+
     def schema(self):
         return f'{self.type_}'
 
@@ -59,6 +62,9 @@ class DatabaseTable():
     def __str__(self):
         return self.name
 
+    def __repr__(self):
+        return self.__str__()
+
     # foreign_of is not None if the column to be added is a foreign key refers to another column
     def add_column(self, name, type_=None, foreign_of:DatabaseColumn=None):
         if name in self.columns:
@@ -79,7 +85,7 @@ class DatabaseTable():
 
     def getAllColumns(self):
         return self.columns.items()
-    
+
     def getAllColumnObjs(self):
         return self.columns.values()
 
@@ -105,7 +111,7 @@ class Database():
 
     def getAllTables(self):
         return self.tables.items()
-    
+
     def evalPred(self, pred_expr: 'Predicate', c_sketch_compl: 'BaseSketchCompl', e_sketch_compl: 'BaseSketchCompl'):
         # TODO: return true of this predicate can be evaluated to true
         return False
@@ -125,7 +131,7 @@ class DatabaseMgr():
 
     def popDatabase(self):
         self.db_stack.pop()
-    
+
     def getDatabase(self):
         return self.db_stack[-1]
 

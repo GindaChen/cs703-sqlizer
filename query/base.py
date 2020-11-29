@@ -5,7 +5,7 @@ from query.type import boolean, equal_types, numeric
 #     from query.expr import Aggregation
 
 
-class BaseExpr():
+class BaseExpr:
     def __init__(self):
         self.all_candidates = None
         pass
@@ -16,13 +16,19 @@ class BaseExpr():
     # all subclasses must implement self.infer()
     # if we want to implement some filter (e.g. only pick the first k candidates)
     # we could implement it here
-    def getCandidates(self, type_check=None):
+    def getCandidates(self, type_check=None) -> typing.List['SingleSketchCompl']:
         if type_check is None: # then enumerate!
             if self.all_candidates is None:
                 self.all_candidates = self.infer() # construct all candidates
             return self.all_candidates
         # else, use type info
         return self.infer(type_check)
+
+    def infer(self, type_check: 'TypeCheck' = None) -> typing.List['SingleSketchCompl']:
+        pass
+
+    def unparse(self):
+        pass
 
 
 class Hint():
@@ -37,8 +43,12 @@ class Hint():
         hint_strs = ', '.join([str(i) for i in self.hint])
         return '[' + hint_strs + ']'
 
+    def __repr__(self):
+        return self.__str__()
+
     def __iter__(self):
         return self.hint.__iter__()
+
 
 
 class BaseOperator():

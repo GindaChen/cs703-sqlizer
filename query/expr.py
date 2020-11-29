@@ -227,7 +227,7 @@ class Table(AbstractTable):
 class GroupAgg(BaseExpr):
     def __init__(self, agg, by_col: Column):
         super().__init__()
-        self.agg = agg
+        self.agg: Aggregation = agg
         self.by_col = by_col
 
     def unparse(self, indent=0, sketch_compl: ComposeSketchCompl=NoneSketchCompl):
@@ -391,7 +391,7 @@ class Join(AbstractTable):
         candidates = []
         for c1 in self.lhs_abs_table.getCandidates():
             for c2 in self.rhs_abs_table.getCandidates():
-                if isinstance(self.lhs_abs_table, Table) and  isinstance(self.rhs_abs_table, Table):
+                if isinstance(self.lhs_abs_table, Table) and isinstance(self.rhs_abs_table, Table):
                     if c1[self.lhs_abs_table.hint] == c2[self.rhs_abs_table.hint]:
                         continue
                 for c3 in self.lhs_col.getCandidates(c1.type_check):
