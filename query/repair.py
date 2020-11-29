@@ -4,6 +4,7 @@ from query import operators
 from query.base import BaseExpr, Hint
 from query.expr import Entity, AbstractTable, AbstractColumns, Value, Column, Table, GroupAgg, Aggregation, Predicate, \
     Projection, Selection, Join
+from query.infer import SingleSketchCompl
 from query.operators import all_aggregates
 
 from query.type import string
@@ -93,7 +94,7 @@ def add_func(column: Column):
     for h in column.hint:
         maybe_func, new_hint = h.split(maxsplit=1)
         for f in all_aggregates:
-            if f.name == maybe_func: # TODO: replace with word similarity
+            if f.name == maybe_func:  # TODO: replace with word similarity
                 repairs += [Aggregation(f, Column(hint=Hint(new_hint)))]
 
     return repairs
@@ -112,17 +113,38 @@ def add_col(pred_expr: Predicate):
     return []
 
 
-def repair_sketch(subpart: BaseExpr):
+def repair_sketch(expr: BaseExpr):
     repairs = []
-    if isinstance(subpart, Predicate):
-        repairs += add_pred(subpart)
-    if isinstance(subpart, Selection):
-        repairs += add_join1(subpart)
-    if isinstance(subpart, Projection):
-        repairs += add_join2(subpart)
-    if isinstance(subpart, Join):
-        repairs += add_join3(subpart)
-    if isinstance(subpart, Predicate):
-        repairs += add_col(subpart)
-    if isinstance(subpart, Column):
-        repairs += add_func(subpart)
+    if isinstance(expr, Predicate):
+        repairs += add_pred(expr)
+    if isinstance(expr, Selection):
+        repairs += add_join1(expr)
+    if isinstance(expr, Projection):
+        repairs += add_join2(expr)
+    if isinstance(expr, Join):
+        repairs += add_join3(expr)
+    if isinstance(expr, Predicate):
+        repairs += add_col(expr)
+    if isinstance(expr, Column):
+        repairs += add_func(expr)
+    return repairs
+
+
+def sub_relations(expr: BaseExpr):
+    if isinstance(expr, Selection):
+        return [(expr.abs_table, expr.pred)]
+    if isinstance(expr, Projection):
+        return [(expr.abs_table, expr.abs_cols)]
+    if isinstance(expr, Join):
+        return [(expr.rhs_abs_table, expr.rhs_col), (expr.lhs_abs_table, expr.lhs_col)]
+
+
+def sub_specifiers(expr: BaseExpr):
+    if isinstance(expr, Predicate):
+        return [expr.args]
+    if isinstance(expr, GroupAgg):
+        return [expr.agg.col, expr.by_col]
+
+
+def fault_localize(expr: BaseExpr, sketch: SingleSketchCompl):
+    pass
