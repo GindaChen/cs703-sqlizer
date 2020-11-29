@@ -134,3 +134,4 @@ dmypy.json
 
 
 word_sim_model
+*.iml
