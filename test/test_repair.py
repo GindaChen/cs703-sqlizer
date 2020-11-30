@@ -73,7 +73,7 @@ def test_add_col():
 def test_fault_localize1():
     getForeignDB()
 
-    p = Projection(
+    expr = Projection(
         Join(
             Table(hint=Hint("author")),
             Table(hint=Hint("papers")),
@@ -82,16 +82,19 @@ def test_fault_localize1():
         ),
         AbstractColumns(Column(hint=Hint("id")))
     )
-    sc_list = p.getCandidates()
 
-    sketch = sc_list[0]
+    sc_list = expr.getCandidates()
 
-    expr, _ = fault_localize(p, sketch)
+    faulty_sketch = sc_list[0]
 
-    assert expr.unparse() == '??[author] JOIN ??[papers] ON ? = ?'
+    assert expr.unparse(sketch_compl=faulty_sketch) == \
+           'SELECT author.id\nFROM author JOIN papers ON author.name = papers.author_name'
+
+    faulty_sub_expr, _ = fault_localize(expr, faulty_sketch)
+
+    assert faulty_sub_expr.unparse() == '??[author] JOIN ??[papers] ON ? = ?'
 
     popDatabase()
-
 
 # This test needs to work when we can access the database content.
 # def test_fault_localize2():
