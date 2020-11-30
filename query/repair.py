@@ -162,9 +162,9 @@ def fault_localize(expr: BaseExpr, sketch: ComposeSketchCompl):
         for relation, specifier, relation_sketch, specifier_sketch in sub_relations:
 
             # line 6 - 7
-            specifier_2, specifier_sketch_2 = fault_localize(relation, relation_sketch)
-            if specifier_2 is not None:
-                return specifier_2, specifier_sketch_2
+            res = fault_localize(relation, relation_sketch)
+            if res is not None:
+                return res
 
             # line 8 - 10
             omega = [fault_localize(relation, s) for s in relation.infer()]
