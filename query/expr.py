@@ -67,6 +67,12 @@ class AbstractTable(Entity):
 
     # its subclass must implement unparse()
 
+    def __str__(self):
+        return self.unparse()
+
+    def __repr__(self):
+        return repr(self.__str__())
+
 
 # this is "L", but it must be a list of c, f(c), or g(f(c), c). No L itself as an element.
 class AbstractColumns(BaseExpr):

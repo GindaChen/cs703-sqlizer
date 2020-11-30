@@ -14,7 +14,7 @@ def add_pred(pred_expr: Predicate):
     repairs = []
 
     func = pred_expr.func
-    if func.arity is not 2:
+    if func.arity != 2:
         return []
 
     lhs = pred_expr.args[0]
@@ -101,7 +101,7 @@ def add_func(column: Column):
 
 
 def add_col(pred_expr: Predicate):
-    if pred_expr.func.arity is not 2:
+    if pred_expr.func.arity != 2:
         return []
 
     lhs = pred_expr.args[0]
@@ -170,7 +170,7 @@ def fault_localize(expr: BaseExpr, sketch: ComposeSketchCompl) -> Union[Tuple[Ba
             omega = [fault_localize(relation, s) for s in relation.infer()]
 
             # line 11: the specifier is faulty if its faulty for all possible inhabitants
-            if all(e for e in omega):
+            if all(e is not None for e in omega):
                 if len(set(omega)) == 1:
                     return omega[0]
                 elif can_repair(specifier):
