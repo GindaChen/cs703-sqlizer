@@ -186,7 +186,7 @@ def fault_localize(expr: BaseExpr, sketch: ComposeSketchCompl):
 
     # line 18: we consider the current sketch as the possible cause of failure
     sub_sketches = expr.infer()
-    if max(s.confid for s in sub_sketches) < 1 and can_repair(expr):
+    if max(s.confid.score for s in sub_sketches) < 1 and can_repair(expr):
         return expr, sketch
 
     return None
