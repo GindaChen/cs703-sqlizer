@@ -84,6 +84,8 @@ def test_fault_localize():
     )
     sc_list = p.getCandidates()
 
-    fault_localize(p, sc_list[0])
+    expr, _ = fault_localize(p, sc_list[0])
+
+    assert expr.unparse() == '??[author] JOIN ??[papers] ON ? = ?'
 
     popDatabase()
