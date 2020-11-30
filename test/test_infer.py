@@ -1,55 +1,9 @@
 from query.base import Hint
-from query.infer import TypeCheck, SingleSketchCompl, ComposeSketchCompl
-from query.expr import Entity, AbstractTable, AbstractColumns, Value, Column, \
+from query.expr import AbstractColumns, Value, Column, \
     Table, GroupAgg, Aggregation, Predicate, Projection, Selection, Join
-from query.confid import BaseConfid, HintConfid, JoinConfid, PredConfid
-from database.table import pushDatabase, popDatabase, getDatabase, DatabaseColumn, DatabaseTable
-from query.type import boolean, numeric, string
+from database.table import popDatabase
 import query.operators as ops
-
-
-def get_mas_db():
-    """Get the mas database in paper"""
-    pushDatabase("db_test_mas")
-
-    db = getDatabase()
-
-    db.add_table("publication")
-    publication = db["publication"]
-    publication.add_column("pid", numeric)
-    publication.add_column("title", string)
-    publication.add_column("abstract", string)
-    publication.add_column("year", numeric)
-    publication.add_column("cid", numeric)
-    publication.add_column("jid", numeric)
-
-    db.add_table("author")
-    author = db["author"]
-    author.add_column("aid", numeric)
-    author.add_column("name", string)
-    author.add_column("homepage", string)
-
-    db.add_table("writes")
-    writes = db["writes"]
-    writes.add_column("aid", numeric)
-    writes.add_column("pid", numeric)
-
-
-def getSimpleDB():
-    pushDatabase("db_test_simple")
-    db = getDatabase()
-
-    db.add_table("t1")
-    db.add_table("t2")
-
-    t1 = db["t1"]
-    t2 = db["t2"]
-    t1.add_column("c11", numeric)
-    t1.add_column("c12", string)
-    t1.add_column("c13", boolean)
-    t2.add_column("c21", numeric)
-    t2.add_column("c22", string)
-    return db
+from test.db import get_mas_db, getSimpleDB
 
 
 def test_hint_confid():

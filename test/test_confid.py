@@ -1,44 +1,9 @@
 from query.base import Hint
-from query.infer import TypeCheck, SingleSketchCompl, ComposeSketchCompl
-from query.expr import Entity, AbstractTable, AbstractColumns, Value, Column, \
-    Table, GroupAgg, Aggregation, Predicate, Projection, Selection, Join
-from query.confid import BaseConfid, HintConfid, JoinConfid, PredConfid
-from database.table import pushDatabase, popDatabase, getDatabase, DatabaseColumn, DatabaseTable
-from query.type import boolean, numeric, string
+from query.expr import AbstractColumns, Value, Column, \
+    Table, Predicate, Projection, Selection, Join
+from database.table import popDatabase
 import query.operators as ops
-import query.params as params
-
-
-def getForeignDB():
-    pushDatabase("db_test_foreign")
-    db = getDatabase()
-
-    db.add_table("author")
-    db.add_table("papers")
-
-    t1 = db["author"]
-    t2 = db["papers"]
-    t1.add_column("id", numeric)
-    t1.add_column("name", string)
-    t1.add_column("is_student", boolean)
-    t2.add_column("pages", numeric)
-    t2.add_column("title", string)
-    t2.add_column("author_name", string, foreign_of=t1["name"])
-
-    return db
-
-def getTinyDB():
-    pushDatabase("db_test_tiny")
-    db = getDatabase()
-
-    db.add_table("author")
-
-    t1 = db["author"]
-    t1.add_column("id", numeric)
-    t1.add_column("name", string)
-    t1.add_column("is_student", boolean)
-
-    return db
+from test.db import getForeignDB, getTinyDB
 
 
 def test_JoinConfid():
