@@ -1,12 +1,12 @@
 # Repair tactics implementation
 # Basically some modification to AST node
+from typing import List
+
 from query import operators
 from query.base import BaseExpr, Hint
-from query.expr import Entity, AbstractTable, AbstractColumns, Value, Column, Table, GroupAgg, Aggregation, Predicate, \
-    Projection, Selection, Join
-from query.infer import SingleSketchCompl
+from query.expr import Value, Column, Table, GroupAgg, Aggregation, Predicate, Projection, Selection, Join
+from query.infer import ComposeSketchCompl, TypeCheck
 from query.operators import all_aggregates
-
 from query.type import string
 
 
@@ -130,21 +130,63 @@ def repair_sketch(expr: BaseExpr):
     return repairs
 
 
-def sub_relations(expr: BaseExpr):
+def can_repair(expr: BaseExpr):
+    return len(repair_sketch(expr)) != 0
+
+
+def get_sub_relations(expr: BaseExpr, sketch: ComposeSketchCompl):
     if isinstance(expr, Selection):
-        return [(expr.abs_table, expr.pred)]
+        return [(expr.abs_table, expr.pred, sketch.getSubCompl(0), sketch.getSubCompl(1))]
     if isinstance(expr, Projection):
-        return [(expr.abs_table, expr.abs_cols)]
+        return [(expr.abs_table, expr.abs_cols, sketch.getSubCompl(0), sketch.getSubCompl(1))]
     if isinstance(expr, Join):
-        return [(expr.rhs_abs_table, expr.rhs_col), (expr.lhs_abs_table, expr.lhs_col)]
+        return [
+            (expr.rhs_abs_table, expr.rhs_col, sketch.getSubCompl(0), sketch.getSubCompl(2)),
+            (expr.lhs_abs_table, expr.lhs_col, sketch.getSubCompl(1), sketch.getSubCompl(3)),
+        ]
 
 
-def sub_specifiers(expr: BaseExpr):
+def get_sub_specifiers(expr: BaseExpr):
     if isinstance(expr, Predicate):
-        return [expr.args]
+        return list(expr.args)
     if isinstance(expr, GroupAgg):
         return [expr.agg.col, expr.by_col]
 
 
-def fault_localize(expr: BaseExpr, sketch: SingleSketchCompl):
-    pass
+def fault_localize(expr: BaseExpr, sketch: ComposeSketchCompl):
+    # line 4: if expr is a relation
+    if any(isinstance(expr, cls) for cls in [Selection, Projection, Join]):
+
+        # line 5
+        sub_relations = get_sub_relations(expr, sketch)
+        for relation, specifier, relation_sketch, specifier_sketch in sub_relations:
+
+            # line 6 - 7
+            specifier_2, specifier_sketch_2 = fault_localize(relation, relation_sketch)
+            if specifier_2 is not None:
+                return specifier_2, specifier_sketch_2
+
+            # line 8 - 10
+            omega = [fault_localize(relation, s) for s in relation.infer()]
+
+            # line 11: the specifier is faulty if its faulty for all possible inhabitants
+            if all(e for e in omega):
+                if len(set(omega)) == 1:
+                    return omega[0]
+                elif can_repair(specifier):
+                    return specifier, specifier_sketch
+
+    # line 14 - 17: if expr is a specifier, we recurse down to its sub_specifiers
+    elif any(isinstance(expr, cls) for cls in [Predicate, GroupAgg]):
+        sub_specifiers = get_sub_specifiers(expr)
+        for specifier in sub_specifiers:
+            omega, sub_sketch = fault_localize(specifier, sketch)
+            if omega:
+                return omega, sub_sketch
+
+    # line 18: we consider the current sketch as the possible cause of failure
+    sub_sketches = expr.infer()
+    if max(s.confid for s in sub_sketches) < 1 and can_repair(expr):
+        return expr, sketch
+
+    return None

@@ -31,7 +31,7 @@ class BaseExpr:
         pass
 
 
-class Hint():
+class Hint:
     def __init__(self, hint=None):
         self.hint = hint or []
         if isinstance(self.hint, str): # sugar: construct from a single string
@@ -50,8 +50,7 @@ class Hint():
         return self.hint.__iter__()
 
 
-
-class BaseOperator():
+class BaseOperator:
     pass
 
 
