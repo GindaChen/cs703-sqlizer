@@ -3,7 +3,7 @@ from query import operators
 from query.base import Hint
 from query.expr import Predicate, Column, Value, Selection, Table, Projection, AbstractColumns, Join
 from query.repair import add_pred, add_join1, add_join2, add_func, add_col, add_join3, fault_localize
-from test.db import getForeignDB
+from test.db import getForeignDB, get_mas_db
 
 
 def test_add_pred():
@@ -70,7 +70,7 @@ def test_add_col():
     assert candidate.unparse() == "(?[Col1] = ?[Col2])"
 
 
-def test_fault_localize():
+def test_fault_localize1():
     getForeignDB()
 
     p = Projection(
@@ -84,8 +84,35 @@ def test_fault_localize():
     )
     sc_list = p.getCandidates()
 
-    expr, _ = fault_localize(p, sc_list[0])
+    sketch = sc_list[0]
+
+    expr, _ = fault_localize(p, sketch)
 
     assert expr.unparse() == '??[author] JOIN ??[papers] ON ? = ?'
 
     popDatabase()
+
+
+# This test needs to work when we can access the database content.
+# def test_fault_localize2():
+#     get_mas_db()
+#
+#     p = Projection(
+#         Selection(
+#             Table(hint=Hint("papers")),
+#             Predicate(operators.eq, Column(hint=Hint()), Value("OOPSLA 2010"))
+#         ),
+#         AbstractColumns(Column(hint=Hint("papers")))
+#     )
+#     assert p.unparse() == 'SELECT ?[papers]\nFROM ??[papers]\nWHERE (? = "OOPSLA 2010")'
+#
+#     sc_list = p.getCandidates()
+#     sketch = sc_list[0]
+#
+#     expr, _ = fault_localize(p, sketch)
+#
+#     fault_localize(expr, sketch)
+#
+#     assert expr.unparse() == '??[papers]\nWHERE (? = "OOPSLA 2010")'
+#
+#     popDatabase()

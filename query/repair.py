@@ -1,6 +1,6 @@
 # Repair tactics implementation
 # Basically some modification to AST node
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 from query import operators, params
 from query.base import BaseExpr, Hint
@@ -153,7 +153,7 @@ def get_sub_specifiers(expr: BaseExpr):
         return [expr.agg.col, expr.by_col]
 
 
-def fault_localize(expr: BaseExpr, sketch: ComposeSketchCompl) -> Tuple[BaseExpr, ComposeSketchCompl]:
+def fault_localize(expr: BaseExpr, sketch: ComposeSketchCompl) -> Union[Tuple[BaseExpr, ComposeSketchCompl], None]:
     # line 4: if expr is a relation
     if any(isinstance(expr, cls) for cls in [Selection, Projection, Join]):
 
