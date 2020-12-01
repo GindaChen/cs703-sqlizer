@@ -86,7 +86,7 @@ class DatabaseTable():
 
 
 class Database():
-    def __init__(self, name, conn):
+    def __init__(self, name, conn=None):
         self.name = name
         self.info = {}
         self.tables = {}
@@ -110,7 +110,10 @@ class Database():
     
     def evalPred(self, pred_expr: 'Predicate', c_sketch_compl: 'BaseSketchCompl', e_sketch_compl: 'BaseSketchCompl'):
         # TODO: return true of this predicate can be evaluated to true
-        return False
+        db = getDatabase()
+        if db.conn is None:
+            return True
+        return True
     
     def setPrimaryForeign(self, primary_table_name: str, primary_column_name: str, foreign_table_name: str, foreign_column_name: str):
         primary_col = self[primary_table_name][primary_column_name]
