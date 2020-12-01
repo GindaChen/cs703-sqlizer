@@ -37,14 +37,11 @@ class Hint:
         if isinstance(self.hint, str): # sugar: construct from a single string
             self.hint = [self.hint]
 
-    def __str__(self):
+    def __repr__(self):
         if not self.hint:
             return ''
         hint_strs = ', '.join([str(i) for i in self.hint])
         return '[' + hint_strs + ']'
-
-    def __repr__(self):
-        return self.__str__()
 
     def __iter__(self):
         return self.hint.__iter__()

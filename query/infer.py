@@ -65,11 +65,8 @@ class SingleSketchCompl(BaseSketchCompl):
     def __getitem__(self, item: BaseConfid):
         return self.compl.get(item)
 
-    def __str__(self):
-        return f"confid={self.confid.score}, compl={self.compl}"
-
     def __repr__(self):
-        return self.__str__()
+        return f"confid={self.confid.score}, compl={self.compl}"
 
 
 class CastSketchCompl(BaseSketchCompl):

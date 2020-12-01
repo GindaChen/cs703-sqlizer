@@ -24,11 +24,8 @@ class DatabaseColumn():
         cname = self.cname
         return f'{tname}.{cname}'
 
-    def __str__(self):
-        return self.name
-
     def __repr__(self):
-        return self.__str__()
+        return self.name
 
     def schema(self):
         return f'{self.type_}'
@@ -60,11 +57,8 @@ class DatabaseTable():
     def name(self) -> str:
         return self.tname
 
-    def __str__(self):
-        return self.name
-
     def __repr__(self):
-        return self.__str__()
+        return self.name
 
     # foreign_of is not None if the column to be added is a foreign key refers to another column
     def add_column(self, name, type_=None, foreign_of:DatabaseColumn=None):
@@ -133,7 +127,7 @@ class Database():
                 return True
             cur.close()
         return False
-    
+
     def setPrimaryForeign(self, primary_table_name: str, primary_column_name: str, foreign_table_name: str, foreign_column_name: str):
         primary_col = self[primary_table_name][primary_column_name]
         foreign_col = self[foreign_table_name][foreign_column_name]
