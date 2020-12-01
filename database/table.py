@@ -9,12 +9,13 @@ from query.type import Type, boolean, numeric, string
 
 
 class DatabaseColumn():
-    def __init__(self, name: str, table: 'DatabaseTable', type_: Type=None, foreign_of:'DatabaseColumn'=None):
+    def __init__(self, name: str, table: 'DatabaseTable', type_: Type=None, foreign_of:'DatabaseColumn'=None, is_primary=False):
         self.cname = name or ""
         self.table: 'DatabaseTable' = table
         self.info = {}
         self.type_ = type_
         self.foreign_of = foreign_of
+        self.is_primary = is_primary
 
     @property
     def name(self) -> str:
@@ -91,10 +92,11 @@ class DatabaseTable():
 
 
 class Database():
-    def __init__(self, name):
+    def __init__(self, name, conn=None):
         self.name = name
         self.info = {}
         self.tables = {}
+        self.conn = conn
 
     def add_table(self, name):
         if name in self.tables:
@@ -113,21 +115,43 @@ class Database():
         return self.tables.items()
 
     def evalPred(self, pred_expr: 'Predicate', c_sketch_compl: 'BaseSketchCompl', e_sketch_compl: 'BaseSketchCompl'):
-        # TODO: return true of this predicate can be evaluated to true
+        db = getDatabase()
+        if db.conn is None:
+            return True
+        lhs = pred_expr.args[0].unparse(sketch_compl = c_sketch_compl)
+        rhs = pred_expr.args[1].unparse(sketch_compl = e_sketch_compl)
+        pred_str = f'({lhs} {pred_expr.func.name} {rhs})'
+        possible_tables = set()
+        for db_col in c_sketch_compl.type_check.type_set:
+            possible_tables.add(db_col.table)
+        for table in possible_tables:
+            table_name = table.tname
+            sql_str = f"SELECT {lhs}\nFROM {table_name}\nWHERE {pred_str}"
+            cur = self.conn.cursor()
+            if cur.execute(sql_str).fetchone() is not None:
+                cur.close()
+                return True
+            cur.close()
         return False
+    
+    def setPrimaryForeign(self, primary_table_name: str, primary_column_name: str, foreign_table_name: str, foreign_column_name: str):
+        primary_col = self[primary_table_name][primary_column_name]
+        foreign_col = self[foreign_table_name][foreign_column_name]
+        primary_col.is_primary = True
+        foreign_col.foreign_of = primary_col
 
 
 # DatabaseMgr makes multiple database coexist possible
 # this is useful to testing where db is built by the test case itself
 # Do not export DatabaseMgr or DBMgr
-# use pushDatabse(), getDatabase(), and popDatabase() to access Database instance
+# use pushDatabase(), getDatabase(), and popDatabase() to access Database instance
 class DatabaseMgr():
     def __init__(self):
         from collections import deque
         self.db_stack = deque()
 
-    def pushDatabase(self, name):
-        self.db_stack.append(Database(name))
+    def pushDatabase(self, name, conn):
+        self.db_stack.append(Database(name, conn))
 
     def popDatabase(self):
         self.db_stack.pop()
@@ -139,8 +163,8 @@ class DatabaseMgr():
 DBMgr = DatabaseMgr()
 
 
-def pushDatabase(name):
-    DBMgr.pushDatabase(name)
+def pushDatabase(name, conn=None):
+    DBMgr.pushDatabase(name, conn=conn)
 
 
 def popDatabase():
