@@ -88,7 +88,7 @@ def test_evalPred():
     db = getDatabase()
     assert db.conn is not None
     c = Column(hint=Hint("year"))
-    v1 = Value(2010)
+    v1 = Value(2017)
     v2 = Value(2021)
     pred_true = Predicate(ops.eq, c, v1)
     pred_false = Predicate(ops.eq, c, v2)

@@ -115,9 +115,12 @@ class Database():
         lhs = pred_expr.args[0].unparse(sketch_compl = c_sketch_compl)
         rhs = pred_expr.args[1].unparse(sketch_compl = e_sketch_compl)
         pred_str = f'({lhs} {pred_expr.func.name} {rhs})'
-        for table_name in db.getAllTableNames():
+        possible_tables = set()
+        for db_col in c_sketch_compl.type_check.type_set:
+            possible_tables.add(db_col.table)
+        for table in possible_tables:
+            table_name = table.tname
             sql_str = f"SELECT {lhs}\nFROM {table_name}\nWHERE {pred_str}"
-            print(sql_str)
             cur = self.conn.cursor()
             if cur.execute(sql_str).fetchone() is not None:
                 cur.close()
