@@ -155,7 +155,7 @@ def get_sub_specifiers(expr: BaseExpr):
 
 def fault_localize(expr: BaseExpr, sketch: ComposeSketchCompl) -> Union[Tuple[BaseExpr, ComposeSketchCompl], None]:
     # line 4: if expr is a relation
-    if any(isinstance(expr, cls) for cls in [Selection, Projection, Join]):
+    if isinstance(expr, (Selection, Projection, Join)):
 
         # line 5
         sub_relations = get_sub_relations(expr, sketch)
@@ -177,7 +177,7 @@ def fault_localize(expr: BaseExpr, sketch: ComposeSketchCompl) -> Union[Tuple[Ba
                     return specifier, specifier_sketch
 
     # line 14 - 17: if expr is a specifier, we recurse down to its sub_specifiers
-    elif any(isinstance(expr, cls) for cls in [Predicate, GroupAgg]):
+    elif isinstance(expr, (Predicate, GroupAgg)):
         sub_specifiers = get_sub_specifiers(expr)
         for specifier in sub_specifiers:
             omega, sub_sketch = fault_localize(specifier, sketch)
