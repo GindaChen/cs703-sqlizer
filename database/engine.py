@@ -28,6 +28,7 @@ def LoadDatabase(path, db_name=None):
             foreign_refs.append((row[2], row[4], tbl_name, row[3]))
     for pt, pc, ft, fc in foreign_refs:
         db.setPrimaryForeign(pt, pc, ft, fc)
+    cur.close()
 
 
 def CloseDatabase():

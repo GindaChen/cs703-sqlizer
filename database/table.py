@@ -109,11 +109,21 @@ class Database():
         return self.tables.items()
     
     def evalPred(self, pred_expr: 'Predicate', c_sketch_compl: 'BaseSketchCompl', e_sketch_compl: 'BaseSketchCompl'):
-        # TODO: return true of this predicate can be evaluated to true
         db = getDatabase()
         if db.conn is None:
             return True
-        return True
+        lhs = pred_expr.args[0].unparse(sketch_compl = c_sketch_compl)
+        rhs = pred_expr.args[1].unparse(sketch_compl = e_sketch_compl)
+        pred_str = f'({lhs} {pred_expr.func.name} {rhs})'
+        for table_name in db.getAllTableNames():
+            sql_str = f"SELECT {lhs}\nFROM {table_name}\nWHERE {pred_str}"
+            print(sql_str)
+            cur = self.conn.cursor()
+            if cur.execute(sql_str).fetchone() is not None:
+                cur.close()
+                return True
+            cur.close()
+        return False
     
     def setPrimaryForeign(self, primary_table_name: str, primary_column_name: str, foreign_table_name: str, foreign_column_name: str):
         primary_col = self[primary_table_name][primary_column_name]
@@ -125,7 +135,7 @@ class Database():
 # DatabaseMgr makes multiple database coexist possible
 # this is useful to testing where db is built by the test case itself
 # Do not export DatabaseMgr or DBMgr
-# use pushDatabse(), getDatabase(), and popDatabase() to access Database instance
+# use pushDatabase(), getDatabase(), and popDatabase() to access Database instance
 class DatabaseMgr():
     def __init__(self):
         from collections import deque
@@ -145,7 +155,7 @@ DBMgr = DatabaseMgr()
 
 
 def pushDatabase(name, conn=None):
-    DBMgr.pushDatabase(name, conn=None)
+    DBMgr.pushDatabase(name, conn=conn)
 
 
 def popDatabase():
