@@ -53,7 +53,6 @@ class BaseSketchCompl:
         return self.confid < other.confid
 
 
-
 class SingleSketchCompl(BaseSketchCompl):
     # compl is a completion map Hint to DatabaseTable/DatabaseColumn to fill in
     def __init__(self, compl: dict, confid: BaseConfid, type_check: TypeCheck):

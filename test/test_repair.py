@@ -1,9 +1,11 @@
-from database.table import popDatabase
+from database.engine import LoadDatabase, CloseDatabase
+from database.table import popDatabase, getDatabase
 from query import operators
 from query.base import Hint
 from query.expr import Predicate, Column, Value, Selection, Table, Projection, AbstractColumns, Join
 from query.repair import add_pred, add_join1, add_join2, add_func, add_col, add_join3, fault_localize
 from test.db import getForeignDB, get_mas_db
+from test.test_engine import buildTestMASDatabaseIfNotExist
 
 
 def test_add_pred():
@@ -96,26 +98,27 @@ def test_fault_localize1():
 
     popDatabase()
 
-# This test needs to work when we can access the database content.
-# def test_fault_localize2():
-#     get_mas_db()
-#
-#     p = Projection(
-#         Selection(
-#             Table(hint=Hint("papers")),
-#             Predicate(operators.eq, Column(hint=Hint()), Value("OOPSLA 2010"))
-#         ),
-#         AbstractColumns(Column(hint=Hint("papers")))
-#     )
-#     assert p.unparse() == 'SELECT ?[papers]\nFROM ??[papers]\nWHERE (? = "OOPSLA 2010")'
-#
-#     sc_list = p.getCandidates()
-#     sketch = sc_list[0]
-#
-#     expr, _ = fault_localize(p, sketch)
-#
-#     fault_localize(expr, sketch)
-#
-#     assert expr.unparse() == '??[papers]\nWHERE (? = "OOPSLA 2010")'
-#
-#     popDatabase()
+
+def test_fault_localize2():
+    buildTestMASDatabaseIfNotExist()
+    LoadDatabase("test_mas.db")
+
+    p = Projection(
+        Selection(
+            Table(hint=Hint("papers")),
+            Predicate(operators.eq, Column(hint=Hint()), Value("OOPSLA 2010"))
+        ),
+        AbstractColumns(Column(hint=Hint("papers")))
+    )
+    assert p.unparse() == 'SELECT ?[papers]\nFROM ??[papers]\nWHERE (? = "OOPSLA 2010")'
+
+    sc_list = p.getCandidates()
+    sketch = sc_list[0]
+
+    expr, _ = fault_localize(p, sketch)
+
+    fault_localize(expr, sketch)
+
+    assert expr.unparse() == '??[papers]\nWHERE (? = "OOPSLA 2010")'
+
+    CloseDatabase()

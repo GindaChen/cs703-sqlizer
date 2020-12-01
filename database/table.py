@@ -2,6 +2,8 @@
 When initializing a database, the following objects are pre-initialized.
 So when the
 """
+import sqlite3
+from sqlite3 import Connection
 from typing import Dict
 from query.type import Type, boolean, numeric, string
 # from query.infer import BaseSketchCompl
@@ -90,7 +92,7 @@ class Database():
         self.name = name
         self.info = {}
         self.tables = {}
-        self.conn = conn
+        self.conn: Connection = conn
 
     def add_table(self, name):
         if name in self.tables:
@@ -122,10 +124,13 @@ class Database():
             table_name = table.tname
             sql_str = f"SELECT {lhs}\nFROM {table_name}\nWHERE {pred_str}"
             cur = self.conn.cursor()
-            if cur.execute(sql_str).fetchone() is not None:
+            try:
+                if cur.execute(sql_str).fetchone() is not None:
+                    return True
+            except sqlite3.Error:
+                return False
+            finally:
                 cur.close()
-                return True
-            cur.close()
         return False
 
     def setPrimaryForeign(self, primary_table_name: str, primary_column_name: str, foreign_table_name: str, foreign_column_name: str):
