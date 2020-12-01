@@ -2,6 +2,8 @@
 When initializing a database, the following objects are pre-initialized.
 So when the
 """
+import sqlite3
+from sqlite3 import Connection
 from typing import Dict
 from query.type import Type, boolean, numeric, string
 # from query.infer import BaseSketchCompl
@@ -24,7 +26,7 @@ class DatabaseColumn():
         cname = self.cname
         return f'{tname}.{cname}'
 
-    def __str__(self):
+    def __repr__(self):
         return self.name
 
     def schema(self):
@@ -57,7 +59,7 @@ class DatabaseTable():
     def name(self) -> str:
         return self.tname
 
-    def __str__(self):
+    def __repr__(self):
         return self.name
 
     # foreign_of is not None if the column to be added is a foreign key refers to another column
@@ -80,7 +82,7 @@ class DatabaseTable():
 
     def getAllColumns(self):
         return self.columns.items()
-    
+
     def getAllColumnObjs(self):
         return self.columns.values()
 
@@ -90,7 +92,7 @@ class Database():
         self.name = name
         self.info = {}
         self.tables = {}
-        self.conn = conn
+        self.conn: Connection = conn
 
     def add_table(self, name):
         if name in self.tables:
@@ -107,7 +109,7 @@ class Database():
 
     def getAllTables(self):
         return self.tables.items()
-    
+
     def evalPred(self, pred_expr: 'Predicate', c_sketch_compl: 'BaseSketchCompl', e_sketch_compl: 'BaseSketchCompl'):
         db = getDatabase()
         if db.conn is None:
@@ -122,12 +124,15 @@ class Database():
             table_name = table.tname
             sql_str = f"SELECT {lhs}\nFROM {table_name}\nWHERE {pred_str}"
             cur = self.conn.cursor()
-            if cur.execute(sql_str).fetchone() is not None:
+            try:
+                if cur.execute(sql_str).fetchone() is not None:
+                    return True
+            except sqlite3.Error:
+                return False
+            finally:
                 cur.close()
-                return True
-            cur.close()
         return False
-    
+
     def setPrimaryForeign(self, primary_table_name: str, primary_column_name: str, foreign_table_name: str, foreign_column_name: str):
         primary_col = self[primary_table_name][primary_column_name]
         foreign_col = self[foreign_table_name][foreign_column_name]

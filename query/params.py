@@ -15,5 +15,8 @@ eps_pred = 0.01
 eps_cast = 0.01
 fine_cast = 0.8
 
+# the confidence threshold `rho` used in fault localization algorithm
+confid_threshold = 0.8
+
 # disable word2vec; this is only useful for quick testing
 skip_w2v = False
