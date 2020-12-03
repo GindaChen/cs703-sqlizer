@@ -47,6 +47,7 @@ def synthesis(query: AbstractTable, depth=3):
         return confident_sketches
 
     for sketch in sketches[:top_k]:
+        print(sketch.confid, repr(query.unparse(sketch_compl=sketch)))
         res = fault_localize(query, sketch)
         if res is None:
             break
