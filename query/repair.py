@@ -141,8 +141,8 @@ def get_sub_relations(expr: BaseExpr, sketch: ComposeSketchCompl):
         return [(expr.abs_table, expr.abs_cols, sketch.getSubCompl(0), sketch.getSubCompl(1))]
     if isinstance(expr, Join):
         return [
-            (expr.rhs_abs_table, expr.rhs_col, sketch.getSubCompl(0), sketch.getSubCompl(2)),
-            (expr.lhs_abs_table, expr.lhs_col, sketch.getSubCompl(1), sketch.getSubCompl(3)),
+            (expr.lhs_abs_table, expr.lhs_col, sketch.getSubCompl(0), sketch.getSubCompl(2)),
+            (expr.rhs_abs_table, expr.rhs_col, sketch.getSubCompl(1), sketch.getSubCompl(3)),
         ]
 
 
