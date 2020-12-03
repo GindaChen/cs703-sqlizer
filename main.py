@@ -5,7 +5,7 @@ from database.engine import LoadDatabase, CloseDatabase
 from query import operators
 from query.base import Hint, BaseExpr
 from query.expr import AbstractTable, Projection, Selection, Table, Predicate, Column, Value, AbstractColumns
-from query.params import confid_threshold
+from query.params import confid_threshold, top_k
 from query.repair import fault_localize, repair_sketch
 from test.test_engine import buildTestMASDatabaseIfNotExist
 
@@ -46,7 +46,7 @@ def synthesis(query: AbstractTable, depth=3):
     if confident_sketches:
         return confident_sketches
 
-    for sketch in sketches:
+    for sketch in sketches[:top_k]:
         res = fault_localize(query, sketch)
         if res is None:
             break
