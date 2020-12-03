@@ -40,8 +40,8 @@ class TypeCheck():
             new_type_set = new_type_set.union(t.type_set)
         return TypeCheck(type_set=new_type_set)
 
-    def __str__(self):
-        return f"col_type={self.col_type} type_set={self.type_set}"
+    def __repr__(self):
+        return f"col_type={self.col_type}, type_set={self.type_set}"
 
 
 # SketchCompl should work like a dict, which map Hint to string
@@ -75,6 +75,9 @@ class CastSketchCompl(BaseSketchCompl):
         self.dst_type = dst_type
         self.confid = CastConfid(val, src_type, dst_type)
         self.type_check = TypeCheck({DatabaseColumn.valueDatabaseColumn(dst_type)})
+
+    def __repr__(self):
+        return f"confid={self.confid.score}, src_type={self.src_type}, dst_type={self.dst_type}"
 
 
 class ComposeSketchCompl(BaseSketchCompl):
