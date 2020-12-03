@@ -17,6 +17,11 @@ def substitute(query: AbstractTable, a: BaseExpr, b: BaseExpr) -> AbstractTable:
     a new copy is returned with `all_candidates` set to None
     """
 
+    def copy_and_replace(curr, key, val):
+        new_curr = copy(curr)
+        setattr(new_curr, key, val)
+        return new_curr
+
     def helper(curr):
         """
         return the changed child, or `None` if current node is not changed
@@ -27,10 +32,12 @@ def substitute(query: AbstractTable, a: BaseExpr, b: BaseExpr) -> AbstractTable:
         curr.all_candidates = None
 
         for k, v in vars(curr).items():
-            if v == a or helper(v):
-                new_curr = copy(curr)
-                setattr(new_curr, k, b)
-                return new_curr
+            if v == a:
+                return copy_and_replace(curr, k, b)
+
+            res = helper(v)
+            if res:
+                return copy_and_replace(curr, k, res)
 
         return None
 
@@ -40,6 +47,9 @@ def substitute(query: AbstractTable, a: BaseExpr, b: BaseExpr) -> AbstractTable:
 def synthesis(query: AbstractTable, depth=3):
     if depth == 0:
         return []
+
+    print("=======================================")
+    print("current query", repr(query.unparse()))
 
     sketches = query.getCandidates()
     confident_sketches = [s for s in sketches if s.confid.score > confid_threshold]
