@@ -26,8 +26,8 @@ class BaseConfid():
     def __lt__(self, other):
         return self.score < other.score
 
-    def __str__(self):
-        return f'confid: {self.score}'
+    def __repr__(self):
+        return f'confid={self.score:.4f}'
 
 
 # sim in Fig. 6

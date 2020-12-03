@@ -16,15 +16,21 @@ class BaseExpr:
     # all subclasses must implement self.infer()
     # if we want to implement some filter (e.g. only pick the first k candidates)
     # we could implement it here
-    def getCandidates(self, type_check=None) -> typing.List['SingleSketchCompl']:
-        if type_check is None: # then enumerate!
+    def getCandidates(self, type_check=None) -> typing.List['BaseSketchCompl']:
+        def infer(type_check=None):
+            candidates = self.infer(type_check)
+            for candidate in candidates:
+                candidate.expr = self
+            return candidates
+
+        if type_check is None:  # then enumerate!
             if self.all_candidates is None:
-                self.all_candidates = self.infer() # construct all candidates
+                self.all_candidates = infer()  # construct all candidates
             return self.all_candidates
         # else, use type info
-        return self.infer(type_check)
+        return infer(type_check)
 
-    def infer(self, type_check: 'TypeCheck' = None) -> typing.List['SingleSketchCompl']:
+    def infer(self, type_check: 'TypeCheck' = None) -> typing.List['BaseSketchCompl']:
         pass
 
     def unparse(self):

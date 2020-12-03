@@ -1,6 +1,8 @@
 # Inference rules implementation
 # Fig 7 and Fig 8
+from typing import List
 
+from query.base import BaseExpr
 from query.confid import BaseConfid, CastConfid
 from query.type import Type
 from database.table import DatabaseColumn
@@ -48,9 +50,13 @@ class TypeCheck():
 class BaseSketchCompl:
     def __init__(self):
         self.confid = None
+        self.expr = None
 
     def __lt__(self, other):
         return self.confid < other.confid
+
+    def __repr__(self):
+        return f"{self.confid}, expr={self.expr.unparse(sketch_compl=self)}"
 
 
 class SingleSketchCompl(BaseSketchCompl):
@@ -64,9 +70,6 @@ class SingleSketchCompl(BaseSketchCompl):
     def __getitem__(self, item: BaseConfid):
         return self.compl.get(item)
 
-    def __repr__(self):
-        return f"confid={self.confid.score}, compl={self.compl}"
-
 
 class CastSketchCompl(BaseSketchCompl):
     def __init__(self, val, src_type: Type, dst_type: Type):
@@ -77,12 +80,20 @@ class CastSketchCompl(BaseSketchCompl):
         self.type_check = TypeCheck({DatabaseColumn.valueDatabaseColumn(dst_type)})
 
     def __repr__(self):
-        return f"confid={self.confid.score}, src_type={self.src_type}, dst_type={self.dst_type}"
+        return f"{self.confid}, " \
+               f"src_type={self.src_type}, " \
+               f"dst_type={self.dst_type}, " \
+               f"expr={self.expr.unparse(sketch_compl=self)}"
 
 
 class ComposeSketchCompl(BaseSketchCompl):
     # if type_check is not specified, the union of from_list's type will be used
-    def __init__(self, from_list, type_check: TypeCheck=None, more_confid=None):
+    def __init__(
+        self,
+        from_list: List[BaseSketchCompl],
+        type_check: TypeCheck = None,
+        more_confid: BaseConfid = None,
+    ):
         super().__init__()
         self.sub_compl = from_list
         self.more_confid = more_confid
