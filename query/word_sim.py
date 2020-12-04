@@ -5,6 +5,7 @@ import fasttext
 from numpy import dot
 from numpy.linalg import norm
 import query.params as params
+import sys
 
 
 class WordSimilarityModel:
@@ -14,7 +15,7 @@ class WordSimilarityModel:
         data_dir=Path(__file__).parent / "word_sim_model",
     ):
         if params.skip_w2v:
-            print('skip word2vec')
+            print('skip word2vec', file=sys.stderr)
             return
         self.data_dir = data_dir
         self.model_name = model_name
@@ -22,9 +23,9 @@ class WordSimilarityModel:
 
         self._download()
 
-        print(f'loading model')
+        print(f'loading model', file=sys.stderr)
         self.model = fasttext.load_model(self.filename.as_posix())
-        print(f'model loaded')
+        print(f'model loaded', file=sys.stderr)
 
     def _download(self):
         self.data_dir.mkdir(exist_ok=True)
@@ -32,12 +33,12 @@ class WordSimilarityModel:
         url = f"http://pages.cs.wisc.edu/~szhong/fasttext/{self.model_name}"
 
         if self.filename.exists():
-            print(f"word similarity model exists at {self.filename}, skip downloading")
+            print(f"word similarity model exists at {self.filename}, skip downloading", file=sys.stderr)
             return
 
-        print(f'downloading word similarity model to {self.filename}')
+        print(f'downloading word similarity model to {self.filename}', file=sys.stderr)
         urllib.request.urlretrieve(url, self.filename)
-        print(f'word similarity saved to {self.filename}')
+        print(f'word similarity saved to {self.filename}', file=sys.stderr)
 
     def similarity(self, w1, w2):
         if params.skip_w2v:

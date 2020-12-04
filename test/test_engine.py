@@ -1,4 +1,4 @@
-import sqlite3, os
+import sqlite3, os, sys
 from database.engine import LoadDatabase, CloseDatabase
 from database.table import getDatabase
 from query.expr import Predicate, Column, Value
@@ -66,7 +66,7 @@ def buildTestMASDatabase():
 
 def buildTestMASDatabaseIfNotExist():
     if os.path.exists("test_mas.db"):
-        print("skip building MAS database")
+        print("skip building MAS database", file=sys.stderr)
     else:
         buildTestMASDatabase()
 
