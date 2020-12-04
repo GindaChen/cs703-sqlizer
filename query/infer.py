@@ -56,7 +56,7 @@ class BaseSketchCompl:
         return self.confid < other.confid
 
     def __repr__(self):
-        return f"{self.confid}, expr={self.expr.unparse(sketch_compl=self)}"
+        return f"{self.confid}, expr={repr(self.expr.unparse(sketch_compl=self))}"
 
 
 class SingleSketchCompl(BaseSketchCompl):
@@ -86,7 +86,7 @@ class CastSketchCompl(BaseSketchCompl):
         return f"{self.confid}, " \
                f"src_type={self.src_type}, " \
                f"dst_type={self.dst_type}, " \
-               f"expr={self.expr.unparse(sketch_compl=self)}"
+               f"expr={repr(self.expr.unparse(sketch_compl=self))}"
 
 
 class ComposeSketchCompl(BaseSketchCompl):
