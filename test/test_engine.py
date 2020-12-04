@@ -54,6 +54,7 @@ def buildTestMASDatabase():
         INSERT INTO Author VALUES (4, "Thomas Dillig");
         INSERT INTO Conference VALUES (11, "OOPSLA", "Object-Oriented Programming, Systems, Languages & Applications");
         INSERT INTO Publication VALUES (21, "SQLizer: Query Synthesis from Natural Language", "SQLizer's abstract", 2017, 11, NULL);
+        INSERT INTO Publication VALUES (22, "Some paper published in 2010", "...", 2010, 11, NULL);
         INSERT INTO Writes VALUES (1, 21);
         INSERT INTO Writes VALUES (2, 21);
         INSERT INTO Writes VALUES (3, 21);

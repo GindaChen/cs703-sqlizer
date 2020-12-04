@@ -1,18 +1,21 @@
+from database.engine import LoadDatabase, CloseDatabase
 from query.base import Hint
 from query.expr import AbstractColumns, Value, Column, \
     Table, GroupAgg, Aggregation, Predicate, Projection, Selection, Join
 from database.table import popDatabase
 import query.operators as ops
 from test.db import get_mas_db, getSimpleDB
+from test.test_engine import buildTestMASDatabaseIfNotExist
 
 
 def test_hint_confid():
-    get_mas_db()
+    buildTestMASDatabaseIfNotExist()
+    LoadDatabase("test_mas.db")
     t = Table(hint=Hint("papers"))
     sc_list = t.getCandidates()
-    res = {t.unparse(sketch_compl=sc): sc.confid for sc in sc_list}
-    assert res["publication"] > res["author"] > res["writes"]
-    popDatabase()
+    res = [t.unparse(sketch_compl=sc) for sc in sc_list]
+    assert res[0] == "Publication"
+    CloseDatabase()
 
 
 def test_inferTable():
