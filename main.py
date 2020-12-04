@@ -1,9 +1,11 @@
 from copy import deepcopy, copy
+from typing import List
 
 from database.engine import LoadDatabase, CloseDatabase
 from query import operators
 from query.base import Hint, BaseExpr
 from query.expr import AbstractTable, Projection, Selection, Table, Predicate, Column, Value, AbstractColumns
+from query.infer import BaseSketchCompl
 from query.params import confid_threshold, top_k
 from query.repair import fault_localize, repair_sketch
 from test.test_engine import buildTestMASDatabaseIfNotExist
@@ -44,7 +46,7 @@ def substitute(query: AbstractTable, a: BaseExpr, b: BaseExpr) -> AbstractTable:
 
 
 # ~ algorithm 1
-def synthesis(query: AbstractTable, depth=3):
+def synthesis(query: AbstractTable, depth=3) -> List[BaseSketchCompl]:
     if depth == 0:
         return []
 
@@ -81,7 +83,10 @@ def main():
         ),
         AbstractColumns(Column(hint=Hint("papers")))
     )
-    synthesis(p)
+    res = synthesis(p)
+
+    for r in res:
+        print(r)
 
     CloseDatabase()
 
