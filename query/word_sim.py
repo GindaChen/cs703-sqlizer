@@ -6,6 +6,7 @@ from numpy import dot
 from numpy.linalg import norm
 import query.params as params
 
+
 class WordSimilarityModel:
     def __init__(
         self,
