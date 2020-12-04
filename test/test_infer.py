@@ -4,7 +4,7 @@ from query.expr import AbstractColumns, Value, Column, \
     Table, GroupAgg, Aggregation, Predicate, Projection, Selection, Join
 from database.table import popDatabase
 import query.operators as ops
-from test.db import get_mas_db, getSimpleDB
+from test.db import getSimpleDB
 from test.test_engine import buildTestMASDatabaseIfNotExist
 
 

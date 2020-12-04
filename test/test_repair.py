@@ -4,7 +4,6 @@ from query import operators
 from query.base import Hint
 from query.expr import Predicate, Column, Value, Selection, Table, Projection, AbstractColumns, Join
 from query.repair import add_pred, add_join1, add_join2, add_func, add_col, add_join3, fault_localize
-from test.db import getForeignDB, get_mas_db
 from test.test_engine import buildTestMASDatabaseIfNotExist
 
 
