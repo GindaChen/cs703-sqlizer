@@ -166,8 +166,10 @@ def fault_localize(expr: BaseExpr, sketch: ComposeSketchCompl) -> Union[Tuple[Ba
             if res is not None:
                 return res
 
-            # line 8 - 10
-            omega = [fault_localize(relation, s) for s in relation.infer()]
+            # line 8: `getCandidates` is called `FindInhabitants` in the algorithm
+            candidates = relation.getCandidates()
+            # line 9 - 10
+            omega = [fault_localize(specifier, s) for s in candidates]
 
             # line 11: the specifier is faulty if its faulty for all possible inhabitants
             if all(e is not None for e in omega):
@@ -180,12 +182,15 @@ def fault_localize(expr: BaseExpr, sketch: ComposeSketchCompl) -> Union[Tuple[Ba
     elif isinstance(expr, (Predicate, GroupAgg)):
         sub_specifiers = get_sub_specifiers(expr)
         for specifier in sub_specifiers:
-            omega, sub_sketch = fault_localize(specifier, sketch)
-            if omega:
-                return omega, sub_sketch
+            res = fault_localize(specifier, sketch)
+            if res is not None:
+                return res
 
     # line 18: we consider the current sketch as the possible cause of failure
-    sub_sketches = expr.infer()
+    if isinstance(expr, (Selection, Projection, Join, Table)):
+        sub_sketches = expr.getCandidates()
+    else:
+        sub_sketches = expr.getCandidates(type_check=sketch.type_check)
     if max(s.confid.score for s in sub_sketches) < params.confid_threshold and can_repair(expr):
         return expr, sketch
 

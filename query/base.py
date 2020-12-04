@@ -8,9 +8,8 @@ from query.type import boolean, equal_types, numeric
 class BaseExpr:
     def __init__(self):
         self.all_candidates = None
-        pass
 
-    def __str__(self):
+    def __repr__(self):
         return self.unparse()
 
     # all subclasses must implement self.infer()

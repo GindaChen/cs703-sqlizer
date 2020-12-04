@@ -70,6 +70,9 @@ class SingleSketchCompl(BaseSketchCompl):
     def __getitem__(self, item: BaseConfid):
         return self.compl.get(item)
 
+    def __repr__(self):
+        return f"{self.confid}, compl={self.compl}"
+
 
 class CastSketchCompl(BaseSketchCompl):
     def __init__(self, val, src_type: Type, dst_type: Type):

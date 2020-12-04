@@ -16,7 +16,7 @@ eps_cast = 0.01
 fine_cast = 0.8
 
 # the confidence threshold `rho` used in fault localization algorithm
-confid_threshold = 0.8
+confid_threshold = 0.7
 
 # only the top k sketches is considered
 top_k = 100

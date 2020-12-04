@@ -1,4 +1,3 @@
-# algorithm 1
 from copy import deepcopy, copy
 
 from database.engine import LoadDatabase, CloseDatabase
@@ -44,6 +43,7 @@ def substitute(query: AbstractTable, a: BaseExpr, b: BaseExpr) -> AbstractTable:
     return helper(query)
 
 
+# ~ algorithm 1
 def synthesis(query: AbstractTable, depth=3):
     if depth == 0:
         return []
