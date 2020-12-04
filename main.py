@@ -4,7 +4,8 @@ from typing import List
 from database.engine import LoadDatabase, CloseDatabase
 from query import operators
 from query.base import Hint, BaseExpr
-from query.expr import AbstractTable, Projection, Selection, Table, Predicate, Column, Value, AbstractColumns
+from query.expr import AbstractTable, Projection, Selection, Table, Predicate, Column, Value, AbstractColumns, \
+    Aggregation
 from query.infer import BaseSketchCompl
 from query.params import confid_threshold, top_k
 from query.repair import fault_localize, repair_sketch
@@ -51,7 +52,7 @@ def synthesis(query: AbstractTable, depth=3) -> List[BaseSketchCompl]:
         return []
 
     print("=======================================")
-    print("current query", repr(query.unparse()))
+    print(f"current sketch: {repr(query.unparse())}")
 
     sketches = query.getCandidates()
     confident_sketches = [s for s in sketches if s.confid.score > confid_threshold]
@@ -81,7 +82,9 @@ def main():
             Table(hint=Hint("papers")),
             Predicate(operators.eq, Column(hint=Hint()), Value("OOPSLA 2010"))
         ),
-        AbstractColumns(Column(hint=Hint("papers")))
+        AbstractColumns(
+            Aggregation(operators.count_, Column(hint=Hint("papers")))
+        )
     )
     res = synthesis(p)
 

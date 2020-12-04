@@ -3,10 +3,12 @@
 # - Foreign and primary keys: Since foreign keys provide links between data in two different database tables, join operations that involve foreign keys have a higher chance of being the intended term.
 # - Database contents: Our approach also uses the contents of the database when assigning scores to queries. For instance, a candidate term sigma_phi(T) is relatively unlikely to occur in the target query if there are no entries in relation T satisfying predicate phi
 
+from query.word_sim import ws_model
 from query.base import Hint
 from database.table import DatabaseColumn, getDatabase
 from query.type import Type, boolean, numeric, string
 import query.params as params
+
 
 class BaseConfid():
     def __init__(self, score: float=0):
@@ -34,7 +36,6 @@ class BaseConfid():
 class HintConfid(BaseConfid):
     def __init__(self, hint: Hint, name: str):
         super().__init__()
-        from query.word_sim import ws_model
         # we split the name (e.g., `Conference.cid`) into two parts and take the average among parts
         # for multiple hints, we take the maximum value
         parts = name.lower().split(".")
