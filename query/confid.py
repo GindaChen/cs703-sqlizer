@@ -35,7 +35,16 @@ class HintConfid(BaseConfid):
     def __init__(self, hint: Hint, name: str):
         super().__init__()
         from query.word_sim import ws_model
-        self.score = max((ws_model.similarity(name, h) for h in hint), default=0.5)
+        # we split the name (e.g., `Conference.cid`) into two parts and take the average among parts
+        # for multiple hints, we take the maximum value
+        parts = name.lower().split(".")
+        self.score = max(
+            (
+                sum(ws_model.similarity(p, h) for p in parts) / len(parts)
+                for h in hint
+            ),
+            default=0.5
+        )
 
 
 class JoinConfid(BaseConfid):
