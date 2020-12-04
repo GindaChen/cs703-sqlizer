@@ -13,7 +13,7 @@ eps_pred = 0.01
 
 # the confidence if a type casting is not reasonable
 eps_cast = 0.01
-fine_cast = 0.8
+fine_cast = 0.95
 
 # the confidence threshold `rho` used in fault localization algorithm
 confid_threshold = 0.7
