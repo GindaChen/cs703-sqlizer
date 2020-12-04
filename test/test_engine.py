@@ -11,49 +11,55 @@ def buildTestMASDatabase():
     conn = sqlite3.connect("test_mas.db")
     cur = conn.cursor()
     # create table
-    cur.execute('CREATE TABLE Journal (\n'\
-        'jid INTEGER PRIMARY KEY,\n'\
-        'name TEXT,\n'\
-        'fullName TEXT\n'\
-        ')')
-    cur.execute('CREATE TABLE Conference (\n'\
-        'cid INTEGER PRIMARY KEY,\n'\
-        'name TEXT,\n'\
-        'fullName TEXT\n'\
-        ')')
-    cur.execute('CREATE TABLE Author (\n'\
-        'aid INTEGER PRIMARY KEY,\n'\
-        'name TEXT\n'\
-        ')')
-    cur.execute('CREATE TABLE Writes (\n'\
-        'aid INTEGER,\n'\
-        'pid INTEGER,\n'\
-        'PRIMARY KEY (aid, pid),\n'
-        'FOREIGN KEY (pid) REFERENCES Publication(pid)\n'\
-        'FOREIGN KEY (aid) REFERENCES Author(aid)\n'\
-        ')')
-    cur.execute('CREATE TABLE Publication (\n'\
-        'pid INTEGER PRIMARY KEY,\n'\
-        'title TEXT,\n'\
-        'abstract TEXT,\n'\
-        'year INTEGER,\n'\
-        'cid INTEGER,\n'\
-        'jid INTEGER,\n'\
-        'FOREIGN KEY (cid) REFERENCES Conference(cid)\n'\
-        'FOREIGN KEY (jid) REFERENCES Journal(jid)\n'
-        ')')
-    # insert
-    cur.execute('INSERT INTO Author VALUES (1, "Navid Yaghmazadeh")')
-    cur.execute('INSERT INTO Author VALUES (2, "Yuepeng Wang")')
-    cur.execute('INSERT INTO Author VALUES (3, "Isil Dillig")')
-    cur.execute('INSERT INTO Author VALUES (4, "Thomas Dillig")')
-    cur.execute('INSERT INTO Conference VALUES (11, "OOPSLA", "Object-Oriented Programming, Systems, Languages & Applications")')
-    cur.execute('INSERT INTO Publication VALUES (21, "SQLizer: Query Synthesis from Natural Language", '\
-        '"SQLizer\'s abstract", 2017, 11, NULL)')
-    cur.execute('INSERT INTO Writes VALUES (1, 21)')
-    cur.execute('INSERT INTO Writes VALUES (2, 21)')
-    cur.execute('INSERT INTO Writes VALUES (3, 21)')
-    cur.execute('INSERT INTO Writes VALUES (4, 21)')
+    cur.executescript("""
+        CREATE TABLE Journal (
+            jid INTEGER PRIMARY KEY,
+            name TEXT,
+            fullName TEXT
+        );
+        
+        CREATE TABLE Conference (
+            cid INTEGER PRIMARY KEY,
+            name TEXT,
+            fullName TEXT
+        );
+        
+        CREATE TABLE Author (
+            aid INTEGER PRIMARY KEY,
+            name TEXT
+        );
+        
+        CREATE TABLE Writes (
+            aid INTEGER,
+            pid INTEGER,
+            PRIMARY KEY (aid, pid),
+            FOREIGN KEY (pid) REFERENCES Publication(pid),
+            FOREIGN KEY (aid) REFERENCES Author(aid)
+        );
+        
+        CREATE TABLE Publication (
+            pid INTEGER PRIMARY KEY,
+            title TEXT,
+            abstract TEXT,
+            year INTEGER,
+            cid INTEGER,
+            jid INTEGER,
+            FOREIGN KEY (cid) REFERENCES Conference(cid),
+            FOREIGN KEY (jid) REFERENCES Journal(jid)
+        );
+        
+        INSERT INTO Author VALUES (1, "Navid Yaghmazadeh");
+        INSERT INTO Author VALUES (2, "Yuepeng Wang");
+        INSERT INTO Author VALUES (3, "Isil Dillig");
+        INSERT INTO Author VALUES (4, "Thomas Dillig");
+        INSERT INTO Conference VALUES (11, "OOPSLA", "Object-Oriented Programming, Systems, Languages & Applications");
+        INSERT INTO Publication VALUES (21, "SQLizer: Query Synthesis from Natural Language", "SQLizer's abstract", 2017, 11, NULL);
+        INSERT INTO Publication VALUES (22, "Some paper published in 2010", "...", 2010, 11, NULL);
+        INSERT INTO Writes VALUES (1, 21);
+        INSERT INTO Writes VALUES (2, 21);
+        INSERT INTO Writes VALUES (3, 21);
+        INSERT INTO Writes VALUES (4, 21);
+    """)
     conn.commit()
     conn.close()
 

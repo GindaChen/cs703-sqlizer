@@ -4,7 +4,6 @@ from query import operators
 from query.base import Hint
 from query.expr import Predicate, Column, Value, Selection, Table, Projection, AbstractColumns, Join
 from query.repair import add_pred, add_join1, add_join2, add_func, add_col, add_join3, fault_localize
-from test.db import getForeignDB, get_mas_db
 from test.test_engine import buildTestMASDatabaseIfNotExist
 
 
@@ -72,34 +71,7 @@ def test_add_col():
     assert candidate.unparse() == "(?[Col1] = ?[Col2])"
 
 
-def test_fault_localize1():
-    getForeignDB()
-
-    expr = Projection(
-        Join(
-            Table(hint=Hint("author")),
-            Table(hint=Hint("papers")),
-            lhs_col=Column(hint=Hint()),
-            rhs_col=Column(hint=Hint()),
-        ),
-        AbstractColumns(Column(hint=Hint("id")))
-    )
-
-    sc_list = expr.getCandidates()
-
-    faulty_sketch = sc_list[0]
-
-    assert expr.unparse(sketch_compl=faulty_sketch) == \
-           'SELECT author.id\nFROM author JOIN papers ON author.name = papers.author_name'
-
-    faulty_sub_expr, _ = fault_localize(expr, faulty_sketch)
-
-    assert faulty_sub_expr.unparse() == '??[author] JOIN ??[papers] ON ? = ?'
-
-    popDatabase()
-
-
-def test_fault_localize2():
+def test_fault_localize():
     buildTestMASDatabaseIfNotExist()
     LoadDatabase("test_mas.db")
 
@@ -119,6 +91,6 @@ def test_fault_localize2():
 
     fault_localize(expr, sketch)
 
-    assert expr.unparse() == '??[papers]\nWHERE (? = "OOPSLA 2010")'
+    assert expr.unparse() == '(? = "OOPSLA 2010")'
 
     CloseDatabase()

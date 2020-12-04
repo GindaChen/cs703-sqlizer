@@ -1,6 +1,8 @@
 # Inference rules implementation
 # Fig 7 and Fig 8
+from typing import List
 
+from query.base import BaseExpr
 from query.confid import BaseConfid, CastConfid
 from query.type import Type
 from database.table import DatabaseColumn
@@ -40,17 +42,21 @@ class TypeCheck():
             new_type_set = new_type_set.union(t.type_set)
         return TypeCheck(type_set=new_type_set)
 
-    def __str__(self):
-        return f"col_type={self.col_type} type_set={self.type_set}"
+    def __repr__(self):
+        return f"col_type={self.col_type}, type_set={self.type_set}"
 
 
 # SketchCompl should work like a dict, which map Hint to string
 class BaseSketchCompl:
     def __init__(self):
         self.confid = None
+        self.expr = None
 
     def __lt__(self, other):
         return self.confid < other.confid
+
+    def __repr__(self):
+        return f"{self.confid}, expr={repr(self.expr.unparse(sketch_compl=self))}"
 
 
 class SingleSketchCompl(BaseSketchCompl):
@@ -65,7 +71,7 @@ class SingleSketchCompl(BaseSketchCompl):
         return self.compl.get(item)
 
     def __repr__(self):
-        return f"confid={self.confid.score}, compl={self.compl}"
+        return f"{self.confid}, compl={self.compl}"
 
 
 class CastSketchCompl(BaseSketchCompl):
@@ -76,10 +82,21 @@ class CastSketchCompl(BaseSketchCompl):
         self.confid = CastConfid(val, src_type, dst_type)
         self.type_check = TypeCheck({DatabaseColumn.valueDatabaseColumn(dst_type)})
 
+    def __repr__(self):
+        return f"{self.confid}, " \
+               f"src_type={self.src_type}, " \
+               f"dst_type={self.dst_type}, " \
+               f"expr={repr(self.expr.unparse(sketch_compl=self))}"
+
 
 class ComposeSketchCompl(BaseSketchCompl):
     # if type_check is not specified, the union of from_list's type will be used
-    def __init__(self, from_list, type_check: TypeCheck=None, more_confid=None):
+    def __init__(
+        self,
+        from_list: List[BaseSketchCompl],
+        type_check: TypeCheck = None,
+        more_confid: BaseConfid = None,
+    ):
         super().__init__()
         self.sub_compl = from_list
         self.more_confid = more_confid

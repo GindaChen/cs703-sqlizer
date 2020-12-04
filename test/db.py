@@ -2,33 +2,6 @@ from database.table import pushDatabase, getDatabase
 from query.type import numeric, string, boolean
 
 
-def get_mas_db():
-    """Get the mas database in paper"""
-    pushDatabase("db_test_mas")
-
-    db = getDatabase()
-
-    db.add_table("publication")
-    publication = db["publication"]
-    publication.add_column("pid", numeric)
-    publication.add_column("title", string)
-    publication.add_column("abstract", string)
-    publication.add_column("year", numeric)
-    publication.add_column("cid", numeric)
-    publication.add_column("jid", numeric)
-
-    db.add_table("author")
-    author = db["author"]
-    author.add_column("aid", numeric)
-    author.add_column("name", string)
-    author.add_column("homepage", string)
-
-    db.add_table("writes")
-    writes = db["writes"]
-    writes.add_column("aid", numeric)
-    writes.add_column("pid", numeric)
-
-
 def getSimpleDB():
     pushDatabase("db_test_simple")
     db = getDatabase()
