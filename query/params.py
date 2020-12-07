@@ -6,13 +6,13 @@
 # xxx = params.eps_join
 
 # the confidence if the lhs and rhs columns of join clause are not primary/foreign key relationship
-eps_join = 0.0001
+eps_join = 0.000001
 
 # the confidence if a predicate is always false in the given database
-eps_pred = 0.0001
+eps_pred = 0.000001
 
 # the confidence if a type casting is not reasonable
-eps_cast = 0.0001
+eps_cast = 0.000001
 fine_cast = 0.95
 
 # the confidence threshold `rho` used in fault localization algorithm
