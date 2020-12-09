@@ -130,10 +130,10 @@ class Database():
                 if cache_result:
                     return True
             else:
-                sql_str = f"SELECT {lhs}\nFROM {table_name}\nWHERE {pred_str}"
+                sql_str = f"SELECT count(*)\nFROM {table_name}\nWHERE {pred_str}"
                 cur = self.conn.cursor()
                 try:
-                    if cur.execute(sql_str).fetchone() is not None:
+                    if cur.execute(sql_str).fetchone() != (0, ):
                         db.pred_cache.addCache(cache_entry, True)
                         return True
                     else:
