@@ -33,8 +33,8 @@ def test_CastConfid():
     sc_list = ps.getCandidates()
     res = [ps.unparse(sketch_compl=sc) for sc in sc_list]
 
-    assert len(res) == 3 * 3
-    assert "SELECT author.id\nFROM author\nWHERE (author.id >= Loris)" in res
+    assert len(res) == 3
+    assert "SELECT author.id\nFROM author\nWHERE (author.id >= Loris)" not in res
     assert "SELECT author.name\nFROM author\nWHERE (author.name >= \"Loris\")" in res
     assert "SELECT author.id\nFROM author\nWHERE (author.name >= \"Loris\")" == res[0]
 
