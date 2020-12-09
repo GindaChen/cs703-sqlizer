@@ -4,29 +4,60 @@
 # 
 # Usage: 
 #   Run on the simple grammar (with all four tags on - [compositional join bridge inject])
-#   ./run @mode=simple -Grammar.inPaths sqlizer/grammars/lab.grammar -languageAnalyzer corenlp.CoreNLPAnalyzer -Grammar.tags compositional join bridge inject
+#   ./run @mode=simple -Grammar.inPaths sqlizer/grammars/formal.grammar -languageAnalyzer corenlp.CoreNLPAnalyzer -Grammar.tags compositional join bridge inject
 # 
 #   Run on the simple grammar (with two tags on - [compositional join])
-#   ./run @mode=simple -Grammar.inPaths sqlizer/simple.grammar -languageAnalyzer corenlp.CoreNLPAnalyzer -Grammar.tags compositional join
+#   ./run @mode=simple -Grammar.inPaths sqlizer/formal.grammar -languageAnalyzer corenlp.CoreNLPAnalyzer -Grammar.tags compositional join
 # 
 #   Run the training too
-#   ./run @mode=simple -Grammar.inPaths sqlizer/grammars/lab.grammar -languageAnalyzer corenlp.CoreNLPAnalyzer -Dataset.inPaths train:sqlizer/grammars/train -FeatureExtractor.featureDomains rule
+#   ./run @mode=simple -Grammar.inPaths sqlizer/grammars/formal.grammar -languageAnalyzer corenlp.CoreNLPAnalyzer -Dataset.inPaths train:sqlizer/grammars/train -FeatureExtractor.featureDomains rule
+# 
+#   Run the server
+#   ./run @mode=simple -Grammar.inPaths sqlizer/grammars/formal.grammar -languageAnalyzer corenlp.CoreNLPAnalyzer -interactive false -server true
+
 
 (rule $Noun ($LEMMA_TOKEN) (FilterPosTagFn token WRB WP NN NNS NNP NNPS))
 (rule $SimpleNounPhrase ($Noun) (ConcatFn " "))
 (rule $SimpleNounPhrase ($Noun $SimpleNounPhrase) (ConcatFn " "))
+(rule $SimpleNounPhrase ($Adj $SimpleNounPhrase) (ConcatFn " "))
 (rule $Verb ($LEMMA_TOKEN) (FilterPosTagFn token VB VBD VBN VBG VBP VBZ VBD-AUX))
 (rule $VerbAux ($LEMMA_TOKEN) (FilterPosTagFn token VBD-AUX))
 (rule $Particle ($LEMMA_TOKEN) (FilterPosTagFn token RP))
 (rule $Prep ($LEMMA_TOKEN) (FilterPosTagFn token IN TO))
 (rule $Adj ($LEMMA_TOKEN) (FilterPosTagFn token JJ))
 (rule $Padding ($PHRASE) (IdentityFn)) # Can skip these sequences
+(rule $ProNoun ($LEMMA_TOKEN) (FilterPosTagFn token PRP))
 
+# --------- What words -----------------
 (rule $Whword (what $VerbAux) (ConstantFn null null))
 
+# --------- Move words -----------------
+(rule $AmbiQuantifier (all) (ConstantFn null null))
+(rule $MoveActor (list) (ConstantFn null null))
+(rule $MoveActor (give ($ProNoun)) (ConstantFn null null))
+    # list all the 
+(rule $Moveword ($MoveActor ($AmbiQuantifier optional)) (ConstantFn null null))
+
+# ---------		Selection rules 			------------
+(rule $SelectionEntity ($SimpleNounPhrase) (IdentityFn))
+
+(rule $SelectHint (all (the optional)) (ConstantFn null null))
+(rule $SelectOp ($SelectHint) (ConstantFn (lambda x
+    (call + (string "select:select(") (var x)  (string ")") )
+)))
+(rule $Selection ($SelectOp $SelectionEntity) (JoinFn forward betaReduce))
+
+# ---------		Aggrergation rules 			------------
 (rule $AggHint (how many) (ConstantFn null null))
 (rule $AggHint (how much) (ConstantFn null null))
 (rule $AggHint (number of) (ConstantFn null null))
+(rule $Operator ($AggHint) (ConstantFn (lambda x
+    (call + (string "agg:count(") (var x)  (string ")") )
+)))
+
+(rule $Aggregate ($Operator $SimpleNounPhrase) (JoinFn forward betaReduce))
+
+# ---------		Group by rules 			------------
 
 (rule $GroupHint (for each) (ConstantFn null null))
 (rule $GroupHint (for every) (ConstantFn null null))
@@ -35,13 +66,8 @@
     (call + (string "agg:groupby(") (var x)  (string ")") )
 )))
 
-(rule $Operator ($AggHint) (ConstantFn (lambda x
-    (call + (string "agg:count(") (var x)  (string ")") )
-)))
-
 # High Level Entity
 (rule $Group (($GroupOp) ($SimpleNounPhrase)) (JoinFn forward betaReduce))
-(rule $Aggregate ($Operator $SimpleNounPhrase) (JoinFn forward betaReduce))
 
 # ---------		Predicate rules 			------------
 (rule $LocHint (in) (ConstantFn null null))
@@ -50,12 +76,16 @@
 )))
 (rule $Location ($LocOp ($Padding optional) $PHRASE) (JoinFn forward betaReduce))
 
+
 # ---------         Root rules              ------------
 # (rule $ROOT (($Whword optional) ($Padding optional) $Operator ($Padding optional) $Entities) (JoinFn forward betaReduce))
+(rule $Set ($Selection) (IdentityFn))
 (rule $Set ($Aggregate) (IdentityFn))
 (rule $Set ($Group) (IdentityFn))
 (rule $Set ($Location) (IdentityFn))
+(rule $Set ($Comparison) (IdentityFn))
+
 (rule $Expr ($Set) (IdentityFn))
 (rule $Expr ($Set $Set) (ConcatFn ", "))
 (rule $ROOT (($Whword optional) ($Padding optional) $Expr (? optional)) (IdentityFn))
-
+(rule $ROOT (($Moveword optional) ($Padding optional) $Expr (? optional)) (IdentityFn))
