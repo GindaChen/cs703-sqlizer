@@ -22,6 +22,7 @@ Extended Relational Algebra
 from typing import List
 
 import query.operators as ops
+from query import params
 from query.type import boolean, numeric, string
 from database.table import DatabaseColumn, DatabaseTable
 from query.base import BaseExpr, AggregateFunc, Operator, Hint
@@ -162,6 +163,7 @@ class Value(Entity):
         possible_types = set(c.type_ for c in type_check.type_set)
         candidates = [CastSketchCompl(self.val, self.type, t)
             for t in possible_types]
+        candidates = list(filter(lambda x: x.confid.score > 1.1 * params.eps_cast, candidates))
         candidates.sort(reverse=True)
         return candidates
 

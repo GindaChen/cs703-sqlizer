@@ -1,4 +1,6 @@
-from copy import deepcopy, copy
+import time
+
+from copy import copy
 from typing import List
 
 from database.engine import LoadDatabase, CloseDatabase
@@ -86,10 +88,15 @@ def main():
             Aggregation(operators.count_, Column(hint=Hint("papers")))
         )
     )
+
+    start = time.time()
     res = synthesis(p)
+    end = time.time()
 
     for r in res:
         print(r)
+
+    print(f"synthesis takes {end - start}")
 
     CloseDatabase()
 

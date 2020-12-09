@@ -187,11 +187,14 @@ def fault_localize(expr: BaseExpr, sketch: ComposeSketchCompl) -> Union[Tuple[Ba
                 return res
 
     # line 18: we consider the current sketch as the possible cause of failure
-    if isinstance(expr, (Selection, Projection, Join, Table)):
-        sub_sketches = expr.getCandidates()
-    else:
-        sub_sketches = expr.getCandidates(type_check=sketch.type_check)
-    if max(s.confid.score for s in sub_sketches) < params.confid_threshold and can_repair(expr):
+    sub_sketches = expr.getCandidates(
+        type_check=None if isinstance(expr, (Selection, Projection, Join, Table)) else sketch.type_check
+    )
+
+    if (
+        max((s.confid.score for s in sub_sketches), default=-1) < params.confid_threshold and
+        can_repair(expr)
+    ):
         return expr, sketch
 
     return None
