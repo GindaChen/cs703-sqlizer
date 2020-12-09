@@ -2,10 +2,11 @@
 When initializing a database, the following objects are pre-initialized.
 So when the
 """
-import sqlite3
+import sqlite3, sys
 from sqlite3 import Connection
 from typing import Dict
 from query.type import Type, boolean, numeric, string
+from database.cache import PredCache
 # from query.infer import BaseSketchCompl
 # from query.expr import Aggregation
 
@@ -93,6 +94,7 @@ class Database():
         self.info = {}
         self.tables = {}
         self.conn: Connection = conn
+        self.pred_cache: PredCache = PredCache()
 
     def add_table(self, name):
         if name in self.tables:
@@ -122,15 +124,25 @@ class Database():
             possible_tables.add(db_col.table)
         for table in possible_tables:
             table_name = table.tname
-            sql_str = f"SELECT {lhs}\nFROM {table_name}\nWHERE {pred_str}"
-            cur = self.conn.cursor()
-            try:
-                if cur.execute(sql_str).fetchone() is not None:
+            cache_entry = (table_name, pred_str)
+            cache_result = db.pred_cache[cache_entry]
+            if cache_result is not None:
+                if cache_result:
                     return True
-            except sqlite3.Error:
-                return False
-            finally:
-                cur.close()
+            else:
+                sql_str = f"SELECT {lhs}\nFROM {table_name}\nWHERE {pred_str}"
+                cur = self.conn.cursor()
+                try:
+                    if cur.execute(sql_str).fetchone() is not None:
+                        db.pred_cache.addCache(cache_entry, True)
+                        return True
+                    else:
+                        db.pred_cache.addCache(cache_entry, False)
+                except sqlite3.Error:
+                    print(f"[WARN] Sqlite3 error: {sql_str}", file=sys.stderr)
+                    return False
+                finally:
+                    cur.close()
         return False
 
     def setPrimaryForeign(self, primary_table_name: str, primary_column_name: str, foreign_table_name: str, foreign_column_name: str):
