@@ -15,18 +15,25 @@
 #   Run the server
 #   ./run @mode=simple -Grammar.inPaths sqlizer/grammars/formal.grammar -languageAnalyzer corenlp.CoreNLPAnalyzer -interactive false -server true
 
-
+(rule $Adj ($LEMMA_TOKEN) (FilterPosTagFn token JJ))
 (rule $Noun ($LEMMA_TOKEN) (FilterPosTagFn token WRB WP NN NNS NNP NNPS))
-(rule $SimpleNounPhrase ($Noun) (ConcatFn " "))
-(rule $SimpleNounPhrase ($Noun $SimpleNounPhrase) (ConcatFn " "))
-(rule $SimpleNounPhrase ($Adj $SimpleNounPhrase) (ConcatFn " "))
 (rule $Verb ($LEMMA_TOKEN) (FilterPosTagFn token VB VBD VBN VBG VBP VBZ VBD-AUX))
 (rule $VerbAux ($LEMMA_TOKEN) (FilterPosTagFn token VBD-AUX))
 (rule $Particle ($LEMMA_TOKEN) (FilterPosTagFn token RP))
 (rule $Prep ($LEMMA_TOKEN) (FilterPosTagFn token IN TO))
-(rule $Adj ($LEMMA_TOKEN) (FilterPosTagFn token JJ))
 (rule $Padding ($PHRASE) (IdentityFn)) # Can skip these sequences
 (rule $ProNoun ($LEMMA_TOKEN) (FilterPosTagFn token PRP))
+
+(rule $SimpleNounPhrase ($Noun) (ConcatFn " "))
+(rule $SimpleAdjModifier ($Adj) 
+    (lambda x
+        (call + (string "where:kind(") (var x)  (string ")") )
+    )
+)
+(rule $SimpleNounPhrase ($Noun $SimpleNounPhrase) (ConcatFn " "))
+# (rule $SimpleNounPhrase ($Adj $SimpleNounPhrase) (ConcatFn " "))
+(rule $SimpleNounPhrase ($SimpleAdjModifier $SimpleNounPhrase) (ConcatFn " "))
+
 
 # (rule $Number ($LEMMA_TOKEN) (FilterNerSpanFn NUMBER))
 (rule $Number ($LEMMA_TOKEN) (FilterPosTagFn token CD))
