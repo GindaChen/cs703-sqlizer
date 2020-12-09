@@ -28,6 +28,9 @@
 (rule $Padding ($PHRASE) (IdentityFn)) # Can skip these sequences
 (rule $ProNoun ($LEMMA_TOKEN) (FilterPosTagFn token PRP))
 
+# (rule $Number ($LEMMA_TOKEN) (FilterNerSpanFn NUMBER))
+(rule $Number ($LEMMA_TOKEN) (FilterPosTagFn token CD))
+
 # --------- What words -----------------
 (rule $Whword (what $VerbAux) (ConstantFn null null))
 
@@ -51,6 +54,7 @@
 (rule $AggHint (how many) (ConstantFn null null))
 (rule $AggHint (how much) (ConstantFn null null))
 (rule $AggHint (number of) (ConstantFn null null))
+(rule $AggHint (total (number optional) (of optional)) (ConstantFn null null))
 (rule $Operator ($AggHint) (ConstantFn (lambda x
     (call + (string "agg:count(") (var x)  (string ")") )
 )))
@@ -76,6 +80,37 @@
 )))
 (rule $Location ($LocOp ($Padding optional) $PHRASE) (JoinFn forward betaReduce))
 
+# ---------		Comparison rules 			------------
+(rule $Comparator (more than) (ConstantFn (string ">")))
+(rule $Comparator (less than) (ConstantFn (string "<")))
+
+# rated more than 3.4
+(rule $Comparison ($Verb $Comparator $Number) 
+    (lambda x 
+        (lambda y 
+            (lambda z
+                (
+                    call + (string "where:binary(")  (var x)  (string ", ") (var y) (string ", ") (var z) (string ")") 
+                )
+            )
+                
+        ) 
+    )
+)
+
+# with more than 4.4 stars
+(rule $Comparison (($Prep optional) $Comparator $Number $SimpleNounPhrase) 
+    (lambda x 
+        (lambda z
+            (lambda y
+                (
+                    call + (string "where:binary(")  (var x)  (string ", ") (var y) (string ", ") (var z) (string ")") 
+                )
+            )
+                
+        ) 
+    )
+)
 
 # ---------         Root rules              ------------
 # (rule $ROOT (($Whword optional) ($Padding optional) $Operator ($Padding optional) $Entities) (JoinFn forward betaReduce))
