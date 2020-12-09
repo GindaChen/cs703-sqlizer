@@ -2,17 +2,20 @@
 # 
 #    Simple Rigid Grammar
 # 
-# Usage:
-# 
+# Usage: 
 #   Run on the simple grammar (with all four tags on - [compositional join bridge inject])
-#   ./run @mode=simple -Grammar.inPaths sqlizer/grammars/find-paper.grammar -languageAnalyzer corenlp.CoreNLPAnalyzer -Grammar.tags compositional join bridge inject
+#   ./run @mode=simple -Grammar.inPaths sqlizer/grammars/lab.grammar -languageAnalyzer corenlp.CoreNLPAnalyzer -Grammar.tags compositional join bridge inject
 # 
 #   Run on the simple grammar (with two tags on - [compositional join])
 #   ./run @mode=simple -Grammar.inPaths sqlizer/simple.grammar -languageAnalyzer corenlp.CoreNLPAnalyzer -Grammar.tags compositional join
 # 
+#   Run the training too
+#   ./run @mode=simple -Grammar.inPaths sqlizer/grammars/lab.grammar -languageAnalyzer corenlp.CoreNLPAnalyzer -Dataset.inPaths train:sqlizer/grammars/train -FeatureExtractor.featureDomains rule
+
 (rule $Noun ($LEMMA_TOKEN) (FilterPosTagFn token WRB WP NN NNS NNP NNPS))
 (rule $SimpleNounPhrase ($Noun) (ConcatFn " "))
 (rule $SimpleNounPhrase ($Noun $SimpleNounPhrase) (ConcatFn " "))
+
 
 # Name Entities: Match an entity if it is a sequence of NE tags or NNP tags or of minimal length
 (rule $NamedEntity ($PHRASE) (FilterNerSpanFn PERSON ORGANIZATION LOCATION MISC))
@@ -21,98 +24,41 @@
 (rule $TokenSpan ($PHRASE) (FilterSpanLengthFn 1))
 (rule $TokenSpan ($LEMMA_TOKEN) (FilterSpanLengthFn 1))
 
-# # Matching binaries (CompositeRel)
-(rule $Verb ($LEMMA_TOKEN) (FilterPosTagFn token VB VBD VBN VBG VBP VBZ VBD-AUX))
-(rule $VerbAux ($LEMMA_TOKEN) (FilterPosTagFn token VBD-AUX))
-(rule $Particle ($LEMMA_TOKEN) (FilterPosTagFn token RP))
-(rule $Prep ($LEMMA_TOKEN) (FilterPosTagFn token IN TO))
-(rule $Adj ($LEMMA_TOKEN) (FilterPosTagFn token JJ))
-
-(rule $Rel ($LEMMA_TOKEN) (FilterPosTagFn token NN NNS NNP NNPS VB VBD VBN VBG VBP VBZ IN VBD-AUX JJ))
-(rule $BaseRel ($Rel) (IdentityFn)) # parents
-(rule $BaseRel ($Verb $SimpleNounPhrase) (ConcatFn " "))
-(rule $BaseRel ($Verb $Particle) (ConcatFn " ")) # grow up
-# (rule $CompositeRel ($BaseRel) (ConcatFn " ")) # grow up, parents
-# (rule $CompositeRel ($BaseRel $Prep) (ConcatFn " ")) # grow up in, parents 
-(rule $CompositeRel ($BaseRel) (ConcatFn " ")) # grow up, parents
-(rule $CompositeRel ($BaseRel $Prep) (ConcatFn " ")) # grow up in, parents 
-
 # Lexicon
 # TODO: Make the lexicon entities realize their type
 (rule $Entity ($NamedEntity) (IdentityFn))
 (rule $Entity ($TokenSpan) (IdentityFn))
-
 (rule $Entity ($PHRASE) (DateFn)) # Example: 2002
-# (rule $Unary ($SimpleNounPhrase) (LexiconFn unary)) # Example: "city"
-(rule $Unary ($SimpleNounPhrase) (IdentityFn)) # Example: "city"
-# (rule $Unary (how $Adj) (ConstantFn (fb:type.object.type fb:type.int) fb:type.int))
-# (rule $Unary (how $Adj) (ConstantFn (fb:type.object.type fb:type.float) fb:type.float))
-(rule $Binary ($CompositeRel) (ConstantFn (lambda x 
-    ( call + (call + (string "where(") (var x)) (string ")") )
-))) # Example: "capital", "developed"
 
 # Define wh-words
-(rule $Whword (who) (ConstantFn null null))
-(rule $Whword (where) (ConstantFn null null))
-(rule $Whword (when) (ConstantFn null null))
-(rule $Whword (what) (ConstantFn null null))
-(rule $Whword (how $Adj) (ConstantFn null null))
 (rule $AggHint (how many) (ConstantFn null null))
 (rule $AggHint (how much) (ConstantFn null null))
 (rule $AggHint (number of) (ConstantFn null null))
 (rule $GroupHint (for each) (ConstantFn null null))
 (rule $GroupHint (for every) (ConstantFn null null))
 
-(rule $Group ($GroupHint ($PHRASE)) (ConstantFn (lambda x 
-    ( call + (call + (string "group(") (var x) ) (string ")") )
+# (rule $GroupOp ($GroupHint) (ConstantFn (lambda x 
+#     ( call + (call + (string "agg:groupby(") (var x) ) (string ")") )
+# )))
+
+(rule $GroupOp ($GroupHint) (ConstantFn (lambda x 
+    (call +  (string "agg:groupby(") (var x)  (string ")") )
 )))
 
 (rule $Operator ($AggHint) (ConstantFn (lambda x 
-    ( call + (call + (string "count(") (var x)) (string ")") )
+    (call +  (string "agg:count(") (var x)  (string ")") )
 )))
 
-(rule $Padding ($PHRASE) (IdentityFn)) # Can skip these sequences
-
-# --------- Join and other composite rules  ----------------
-# TODO: What should be the bridge function?
-# (when bridge
-#   (rule $BaseSet ($Unary ($Padding optional) $Entity) (BridgeFn unary headFirst))
-#   (rule $BaseSet ($Entity ($Padding optional) $Unary) (BridgeFn unary headLast))
-#   (rule $BaseSet ($Entity) (BridgeFn entity headLast))
-# )
-
-# (when join
-  (rule $BaseSet ($Entity ($Padding optional) $Binary) ( ConcatFn " " ))
-  (rule $BaseSet ($Binary ($Padding optional) $Entity) ( ConcatFn " " ))
-# )
-
-# (when (not compositional)
-  (rule $Set ($BaseSet) (IdentityFn))
-  (rule $SetNC ($Unary ($Padding optional) $BaseSet) (ConcatFn ", "))
-
-  (rule $Set ($SetNC) (lambda x 
-    ( call + (call + (string "and(") (var x)) (string ")") )
-  ))
-# )
-
-# (when compositional
-#   (rule $Set ($BaseSet) (IdentityFn))
-  
-#   ### Combine set and binary
-#   (when join
-#     (rule $Set ($Binary ($Padding optional) $Set) ( ConcatFn " " ))
-#     (rule $Set ($Set ($Padding optional) $Binary) ( ConcatFn " " ))
-#   )
-
-#   # Merge two sets
-#   (rule $Set ($Set ($Padding optional) $Set) ( (lambda x 
-#         ( call + (call + (string "and(") (var x) ) (string ")") )
-#   )))
-# )
+# High Level Entity
+(rule $Group (($GroupOp) ($SimpleNounPhrase)) (JoinFn forward betaReduce))
+(rule $Aggregate ($Operator $SimpleNounPhrase) (JoinFn forward betaReduce))
 
 # ---------         Root rules              ------------
-# Handles aggregation
-(rule $ROOT (($Whword optional) ($Padding optional) $Operator ($Padding optional) $Set) (JoinFn forward betaReduce))
-(rule $ROOT (($Whword optional) ($Padding optional) $Operator ($Padding optional) $SimpleNounPhrase) (JoinFn forward betaReduce))
-# Handle What-started questions
-(rule $ROOT (($Whword optional) ($VerbAux optional) ($Padding optional) $Set ($Padding optional)) (IdentityFn))
+# (rule $ROOT (($Whword optional) ($Padding optional) $Operator ($Padding optional) $Entities) (JoinFn forward betaReduce))
+
+(rule $Padding ($PHRASE) (IdentityFn)) # Can skip these sequences
+(rule $Set ($Aggregate) (IdentityFn))
+(rule $Set ($Group) (IdentityFn))
+(rule $ROOT ($Set) (IdentityFn))
+(rule $ROOT ($Set $Set) (ConcatFn ", "))
+
