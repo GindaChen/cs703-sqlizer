@@ -139,7 +139,7 @@ class Database():
                     else:
                         db.pred_cache.addCache(cache_entry, False)
                 except sqlite3.Error:
-                    print(f"[WARN] Sqlite3 error: {sql_str}", file=sys.stderr)
+                    # print(f"[WARN] Sqlite3 error: {sql_str}", file=sys.stderr)
                     return False
                 finally:
                     cur.close()
