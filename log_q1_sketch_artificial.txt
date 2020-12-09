@@ -1,0 +1,18 @@
+word similarity model exists at /mnt/data/cs703-sqlizer/query/word_sim_model/cc.en.50.bin, skip downloading
+loading model
+Warning : `load_model` does not return WordVectorModel or SupervisedModel any more, but a `FastText` object which is very similar.
+model loaded
+Yelp Query 1: Give me all the moroccan restaurants in Texas
+Yelp Query 1 Golden Solution: SELECT name FROM business JOIN category ON (business.bid = category.id) WHERE category.category_name = 'Moroccan';
+Initial Sketch: SELECT ?[name]
+FROM ??[business]
+WHERE ((?[state] = "Texas") AND (?[category_name] = "Moroccan"))
+=======================================
+current sketch: 'SELECT ?[name]\nFROM ??[business]\nWHERE ((?[state] = "Texas") AND (?[category_name] = "Moroccan"))'
+confid=0.4819 'SELECT business.name\nFROM business\nWHERE ((business.state = "Texas") AND (business.full_address = "Moroccan"))'
+=======================================
+current sketch: 'SELECT ?[name]\nFROM ??[business] JOIN ?? ON ? = ?\nWHERE ((?[state] = "Texas") AND (?[category_name] = "Moroccan"))'
+confid=0.7765 'SELECT business.name\nFROM business JOIN category ON business.business_id = category.business_id\nWHERE ((business.state = "Texas") AND (category.category_name = "Moroccan"))'
+confid=0.7619 'SELECT business.name\nFROM category JOIN business ON category.business_id = business.business_id\nWHERE ((business.state = "Texas") AND (category.category_name = "Moroccan"))'
+confid=0.7089 'SELECT category.id\nFROM business JOIN category ON business.business_id = category.business_id\nWHERE ((business.state = "Texas") AND (category.category_name = "Moroccan"))'
+synthesis takes 106.33817100524902
