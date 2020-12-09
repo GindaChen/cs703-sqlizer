@@ -15,50 +15,47 @@
 (rule $Noun ($LEMMA_TOKEN) (FilterPosTagFn token WRB WP NN NNS NNP NNPS))
 (rule $SimpleNounPhrase ($Noun) (ConcatFn " "))
 (rule $SimpleNounPhrase ($Noun $SimpleNounPhrase) (ConcatFn " "))
+(rule $Verb ($LEMMA_TOKEN) (FilterPosTagFn token VB VBD VBN VBG VBP VBZ VBD-AUX))
+(rule $VerbAux ($LEMMA_TOKEN) (FilterPosTagFn token VBD-AUX))
+(rule $Particle ($LEMMA_TOKEN) (FilterPosTagFn token RP))
+(rule $Prep ($LEMMA_TOKEN) (FilterPosTagFn token IN TO))
+(rule $Adj ($LEMMA_TOKEN) (FilterPosTagFn token JJ))
+(rule $Padding ($PHRASE) (IdentityFn)) # Can skip these sequences
 
+(rule $Whword (what $VerbAux) (ConstantFn null null))
 
-# Name Entities: Match an entity if it is a sequence of NE tags or NNP tags or of minimal length
-(rule $NamedEntity ($PHRASE) (FilterNerSpanFn PERSON ORGANIZATION LOCATION MISC))
-(rule $NamedEntity ($PHRASE) (FilterPosTagFn span NNP))
-
-(rule $TokenSpan ($PHRASE) (FilterSpanLengthFn 1))
-(rule $TokenSpan ($LEMMA_TOKEN) (FilterSpanLengthFn 1))
-
-# Lexicon
-# TODO: Make the lexicon entities realize their type
-(rule $Entity ($NamedEntity) (IdentityFn))
-(rule $Entity ($TokenSpan) (IdentityFn))
-(rule $Entity ($PHRASE) (DateFn)) # Example: 2002
-
-# Define wh-words
 (rule $AggHint (how many) (ConstantFn null null))
 (rule $AggHint (how much) (ConstantFn null null))
 (rule $AggHint (number of) (ConstantFn null null))
+
 (rule $GroupHint (for each) (ConstantFn null null))
 (rule $GroupHint (for every) (ConstantFn null null))
 
-# (rule $GroupOp ($GroupHint) (ConstantFn (lambda x 
-#     ( call + (call + (string "agg:groupby(") (var x) ) (string ")") )
-# )))
-
-(rule $GroupOp ($GroupHint) (ConstantFn (lambda x 
-    (call +  (string "agg:groupby(") (var x)  (string ")") )
+(rule $GroupOp ($GroupHint) (ConstantFn (lambda x
+    (call + (string "agg:groupby(") (var x)  (string ")") )
 )))
 
-(rule $Operator ($AggHint) (ConstantFn (lambda x 
-    (call +  (string "agg:count(") (var x)  (string ")") )
+(rule $Operator ($AggHint) (ConstantFn (lambda x
+    (call + (string "agg:count(") (var x)  (string ")") )
 )))
 
 # High Level Entity
 (rule $Group (($GroupOp) ($SimpleNounPhrase)) (JoinFn forward betaReduce))
 (rule $Aggregate ($Operator $SimpleNounPhrase) (JoinFn forward betaReduce))
 
+# ---------		Predicate rules 			------------
+(rule $LocHint (in) (ConstantFn null null))
+(rule $LocOp ($LocHint) (ConstantFn (lambda x
+    (call + (string "where:location(") (var x)  (string ")") )
+)))
+(rule $Location ($LocOp ($Padding optional) $PHRASE) (JoinFn forward betaReduce))
+
 # ---------         Root rules              ------------
 # (rule $ROOT (($Whword optional) ($Padding optional) $Operator ($Padding optional) $Entities) (JoinFn forward betaReduce))
-
-(rule $Padding ($PHRASE) (IdentityFn)) # Can skip these sequences
 (rule $Set ($Aggregate) (IdentityFn))
 (rule $Set ($Group) (IdentityFn))
-(rule $ROOT ($Set) (IdentityFn))
-(rule $ROOT ($Set $Set) (ConcatFn ", "))
+(rule $Set ($Location) (IdentityFn))
+(rule $Expr ($Set) (IdentityFn))
+(rule $Expr ($Set $Set) (ConcatFn ", "))
+(rule $ROOT (($Whword optional) ($Padding optional) $Expr (? optional)) (IdentityFn))
 
