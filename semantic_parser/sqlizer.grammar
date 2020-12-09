@@ -65,6 +65,8 @@
 
 (rule $GroupHint (for each) (ConstantFn null null))
 (rule $GroupHint (for every) (ConstantFn null null))
+(rule $GroupHint (per) (ConstantFn null null))
+(rule $GroupHint (by) (ConstantFn null null))
 
 (rule $GroupOp ($GroupHint) (ConstantFn (lambda x
     (call + (string "agg:groupby(") (var x)  (string ")") )
