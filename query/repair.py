@@ -92,7 +92,10 @@ def add_func(column: Column):
     repairs = []
 
     for h in column.hint:
-        maybe_func, new_hint = h.split(maxsplit=1)
+        splitted = h.split(maxsplit=1)
+        if len(splitted) != 2:
+            continue
+        maybe_func, new_hint = splitted
         for f in all_aggregates:
             if f.name == maybe_func:  # TODO: replace with word similarity
                 repairs += [Aggregation(f, Column(hint=Hint(new_hint)))]
