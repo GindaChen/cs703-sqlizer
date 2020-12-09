@@ -100,17 +100,25 @@ def main_demo_mas():
 
     CloseDatabase()
 
-def yelp_q1():
-    # # Query 1:
-    # # Give me all the moroccan restaurants in Texas
-    # # Sketch: 
-    # #   - select:select(moroccan restaurant), where:location(Texas)
-    sketches = []
-    solution = "SELECT name FROM business JOIN category ON (business.bid = category.id) WHERE category.category_name = 'Moroccan';"
-    print("Yelp Query 1: Give me all the moroccan restaurants in Texas")
-    print(f"Yelp Query 1 Golden Solution: {solution}")
-    
 
+def yelp_q1():
+    """
+    Query 1:
+    Give me all the moroccan restaurants in Texas
+    """
+    query_identifier = "Yelp 1"
+    sketches = []
+    literal_top_sketch = "select:select(restaurant), where:location(Texas), where:kind(Moroccan)"
+    utterance = "Give me all the moroccan restaurants in Texas"
+    solution = """
+    SELECT name FROM business 
+    JOIN category ON (business.business_id = category.business_id) 
+    WHERE category.category_name = 'Moroccan' AND state = 'Texas';
+    """
+    print(f"{query_identifier} Utterance: {utterance}")
+    print(f"{query_identifier} Golden Solution: {solution}")
+    
+    # Version 1: [Sketch works!]
     p = Projection(
         Selection(
             Table(hint=Hint(["business"])),
@@ -125,51 +133,145 @@ def yelp_q1():
     )
     sketches.append(p)
 
-    # p = Projection(
-    #     Selection(
-    #         # Table(hint=Hint(["restaurant"])),
-    #         Table(hint=Hint(["business"])),
-    #         Predicate(operators.and_, 
-    #             Predicate(operators.eq, Column(hint=Hint("State")), Value("Texas") ),
-    #             Predicate(operators.eq, Column(hint=Hint("Category")), Value("Moroccan"))
-    #         )
-    #     ),
-    #     AbstractColumns(
-    #         Column(hint=Hint(["name"]))
-    #     )
-    # )
-    # sketches.append(p)
-
-    # p = Projection(
-    #     Selection(
-    #         Table(hint=Hint(["restaurant"])),
-    #         Predicate(operators.eq, Column(hint=Hint("State")), Value("Texas") ),
-    #         Predicate(operators.eq, Column(hint=Hint("Category")), Value("moroccan")),
-    #     ),
-    #     AbstractColumns(
-    #         Column(hint=Hint(["restaurant"]))
-    #     )
-    # )
-    # sketches.append(p)
-
-    # p = Projection(
-    #     Selection(
-    #         Table(hint=Hint(["moroccan", "restaurant"])),
-    #         Predicate(operators.eq, Column(hint=Hint("Place")), Value("Texas") ),
-    #     ),
-    #     AbstractColumns(
-    #         Column(hint=Hint(["moroccan", "restaurant"]))
-    #     )
-    # )
-    # sketches.append(p)
+    # Version 2: [Sketch works!]
+    # Modified sketch hint columns
+    p = Projection(
+        Selection(
+            Table(hint=Hint(["business"])),
+            Predicate(operators.and_, 
+                Predicate(operators.eq, Column(hint=Hint("Place")), Value("Texas") ),
+                Predicate(operators.eq, Column(hint=Hint("Kind")), Value("Moroccan"))
+            )
+        ),
+        AbstractColumns(
+            Column(hint=Hint(["name"]))
+        )
+    )
+    sketches.append(p)
 
     return sketches
+
+
+def yelp_q2():
+    query_identifier = "Yelp 2"
+    sketches = []
+    utterance = "List all the Italian restaurants in Los Angeles"
+    literal_top_sketch = "select:select(where:kind(italian) restaurant), where:location(Los Angeles)"
+    solution = """
+    SELECT name FROM business 
+    JOIN category ON (business.business_id = category.business_id) 
+    WHERE category.category_name = 'Italian' AND business.state = 'Los Angeles';
+    """
+    print(f"{query_identifier} Utterance: {utterance}")
+    print(f"{query_identifier} Golden Solution: {solution}")
+
+    p = Projection(
+        Selection(
+            Table(hint=Hint(["business"])),
+            Predicate(operators.and_, 
+                Predicate(operators.eq, Column(hint=Hint("state")), Value("Los Angeles") ),
+                Predicate(operators.eq, Column(hint=Hint("category_name")), Value("Italian"))
+            )
+        ),
+        AbstractColumns(
+            Column(hint=Hint(["name"]))
+        )
+    )
+    sketches.append(p)
+    return sketches
+
+def yelp_q3():
+    query_identifier = "Yelp 3"
+    sketches = []
+    literal_top_sketch = "agg:count(preschool), where:location(Madison)"
+    utterance = "Find the number of preschools in Madison"
+    solution = """
+    SELECT count(preschool) FROM business 
+    JOIN category ON (business.business_id = category.business_id) 
+    WHERE category.category_name = 'Moroccan';
+    """
+    Comments = """
+    - Fuzzy match: The "preschool" is tokenized by frontend such that it does not exactly match the entry "Preschools" in the table.
+    - Entity misplaced: Preschool is a category instead of a entry. 
+    - Madison is a city, but there are many columns that contains geographic information (state, city, address, etc). 
+    """
+
+    print(f"{query_identifier} Utterance: {utterance}")
+    print(f"{query_identifier} Golden Solution: {solution}")
+
+    # [Sketch Failed...] 
+    # The preschool hint is misplaced into the count() operator.
+    # p = Projection(
+    #     Selection(
+    #         Table(hint=Hint(["business"])),
+    #         Predicate(operators.eq, Column(hint=Hint("city")), Value("Madison"))
+    #     ),
+    #     AbstractColumns(
+    #         Aggregation(operators.count_, Column(hint=Hint("preschool")))
+    #     )
+    # )
+    # sketches.append(p)
+
+    p = Projection(
+        Selection(
+            Table(hint=Hint(["business"])),
+            Predicate(operators.and_, 
+                Predicate(operators.eq, Column(hint=Hint("city")), Value("Madison")),
+                Predicate(operators.eq, Column(hint=Hint("category_name")), Value("Preschools")),
+            )
+        ),
+        AbstractColumns(
+            # Aggregation(operators.count_, Column(hint=Hint("preschool")))
+            Aggregation(operators.count_, Column(hint=Hint("name")))
+        )
+    )
+    sketches.append(p)
+    return sketches
+
+
+
+def yelp_q4():
+    query_identifier = "Yelp 4"
+    sketches = []
+    literal_top_sketch = "select:select(restaurant), where:binary(rate, >, 3.5)"
+    utterance = "List all the restaurants rated more than 3.5"
+    solution = """
+    SELECT business.name FROM business 
+    JOIN category ON (business.business_id = review.business_id)
+    WHERE review.rating > 3.5;
+    """
+    Comments = """
+    - Fuzzy match `rate`: the original column name is `rating`.
+    """
+
+    print(f"{query_identifier} Utterance: {utterance}")
+    print(f"{query_identifier} Golden Solution: {solution}")
+
+    
+    p = Projection(
+        Selection(
+            Table(hint=Hint(["business"])),
+            Predicate(operators.and_, 
+                Predicate(operators.gt, Column(hint=Hint("rate")), Value(3.5)),
+            )
+        ),
+        AbstractColumns(
+            # Column(hint=Hint(["restaurant"]))
+            Column(hint=Hint(["name"]))
+        )
+    )
+    sketches.append(p)
+    return sketches
+
+
+
+
 
 def main():
     db_path = "yelp.db"
 
     fk_pk_list = [        
-        # (primary table name, primary column name, foreign table name, foreign column name)
+        # (primary table name, primary column name, foreign table name, foreign column name)    
         ("business", "business_id", "category", "business_id"),
         ("business", "business_id", "checkin", "business_id"),
         ("business", "business_id", "neighborhood", "business_id"),
@@ -181,7 +283,9 @@ def main():
     ] 
     LoadDatabase(db_path, fk_pk_list=fk_pk_list)
 
-    queries = [yelp_q1]
+    # queries = [yelp_q1]
+    # queries = [yelp_q2]
+    queries = [yelp_q3]
     for q in queries:
         sketches = q()
         for p in sketches:

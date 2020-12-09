@@ -1,0 +1,14 @@
+Yelp 2 Utterance: List all the Italian restaurants in Los Angeles
+Yelp 2 Golden Solution: SELECT name FROM business JOIN category ON (business.bid = category.id) WHERE category.category_name = 'Moroccan';
+Initial Sketch: SELECT ?[name]
+FROM ??[business]
+WHERE ((?[state] = "Los Angeles") AND (?[category_name] = "Italian"))
+=======================================
+current sketch: 'SELECT ?[name]\nFROM ??[business]\nWHERE ((?[state] = "Los Angeles") AND (?[category_name] = "Italian"))'
+confid=0.4795 'SELECT business.name\nFROM business\nWHERE ((business.city = "Los Angeles") AND (business.full_address = "Italian"))'
+=======================================
+current sketch: 'SELECT ?[name]\nFROM ??[business] JOIN ?? ON ? = ?\nWHERE ((?[state] = "Los Angeles") AND (?[category_name] = "Italian"))'
+confid=0.7726 'SELECT business.name\nFROM business JOIN category ON business.business_id = category.business_id\nWHERE ((business.city = "Los Angeles") AND (category.category_name = "Italian"))'
+confid=0.7580 'SELECT business.name\nFROM category JOIN business ON category.business_id = business.business_id\nWHERE ((business.city = "Los Angeles") AND (category.category_name = "Italian"))'
+confid=0.7054 'SELECT category.id\nFROM business JOIN category ON business.business_id = category.business_id\nWHERE ((business.city = "Los Angeles") AND (category.category_name = "Italian"))'
+synthesis takes 107.76206254959106

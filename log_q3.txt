@@ -1,0 +1,18 @@
+Yelp 3 Utterance: Find the number of preschools in Madison
+Yelp 3 Golden Solution:
+    SELECT count(preschool) FROM business
+    JOIN category ON (business.business_id = category.business_id)
+    WHERE category.category_name = 'Moroccan';
+
+Initial Sketch: SELECT count(?[name])
+FROM ??[business]
+WHERE ((?[city] = "Madison") AND (?[category_name] = "Preschools"))
+=======================================
+current sketch: 'SELECT count(?[name])\nFROM ??[business]\nWHERE ((?[city] = "Madison") AND (?[category_name] = "Preschools"))'
+confid=0.4818 'SELECT count(business.name)\nFROM business\nWHERE ((business.city = "Madison") AND (business.full_address = "Preschools"))'
+=======================================
+current sketch: 'SELECT count(?[name])\nFROM ??[business] JOIN ?? ON ? = ?\nWHERE ((?[city] = "Madison") AND (?[category_name] = "Preschools"))'
+confid=0.7764 'SELECT count(business.name)\nFROM business JOIN category ON business.business_id = category.business_id\nWHERE ((business.city = "Madison") AND (category.category_name = "Preschools"))'
+confid=0.7618 'SELECT count(business.name)\nFROM category JOIN business ON category.business_id = business.business_id\nWHERE ((business.city = "Madison") AND (category.category_name = "Preschools"))'
+confid=0.7088 'SELECT count(category.id)\nFROM business JOIN category ON business.business_id = category.business_id\nWHERE ((business.city = "Madison") AND (category.category_name = "Preschools"))'
+synthesis takes 114.90243148803711
