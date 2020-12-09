@@ -75,7 +75,7 @@ def synthesis(query: AbstractTable, depth=3) -> List[BaseSketchCompl]:
                 return res
 
 
-def main():
+def main_demo_mas():
     buildTestMASDatabaseIfNotExist()
     LoadDatabase("test_mas.db")
 
@@ -100,6 +100,75 @@ def main():
 
     CloseDatabase()
 
+def yelp_q1():
+    # # Query 1:
+    # # Give me all the moroccan restaurants in Texas
+    # # Sketch: 
+    # #   - select:select(moroccan restaurant), where:location(Texas)
+    sketches = []
+    print("Yelp Query 1: Give me all the moroccan restaurants in Texas")
+
+    p = Projection(
+        Selection(
+            Table(hint=Hint(["restaurant"])),
+            Predicate(operators.and_, 
+                Predicate(operators.eq, Column(hint=Hint("State")), Value("Texas") ),
+                Predicate(operators.eq, Column(hint=Hint("Category")), Value("moroccan"))
+            )
+        ),
+        AbstractColumns(
+            Column(hint=Hint(["restaurant"]))
+        )
+    )
+    sketches.append(p)
+
+    # p = Projection(
+    #     Selection(
+    #         Table(hint=Hint(["restaurant"])),
+    #         Predicate(operators.eq, Column(hint=Hint("State")), Value("Texas") ),
+    #         Predicate(operators.eq, Column(hint=Hint("Category")), Value("moroccan")),
+    #     ),
+    #     AbstractColumns(
+    #         Column(hint=Hint(["restaurant"]))
+    #     )
+    # )
+    # sketches.append(p)
+
+    # p = Projection(
+    #     Selection(
+    #         Table(hint=Hint(["moroccan", "restaurant"])),
+    #         Predicate(operators.eq, Column(hint=Hint("Place")), Value("Texas") ),
+    #     ),
+    #     AbstractColumns(
+    #         Column(hint=Hint(["moroccan", "restaurant"]))
+    #     )
+    # )
+    # sketches.append(p)
+
+    return sketches
+
+def main():
+    db_path = "yelp.db"
+    LoadDatabase(db_path)
+
+    queries = [yelp_q1]
+    for q in queries:
+        sketches = q()
+        for p in sketches:
+            print(f"Sketch: {p}")
+
+            start = time.time()
+            res = synthesis(p)
+            end = time.time()
+
+            for r in res:
+                print(r)
+
+            print(f"synthesis takes {end - start}")
+
+    CloseDatabase()
+
 
 if __name__ == '__main__':
+    # main_demo_mas()
     main()
