@@ -80,38 +80,33 @@
 (rule $LocOp ($LocHint) (ConstantFn (lambda x
     (call + (string "where:location(") (var x)  (string ")") )
 )))
-(rule $Location ($LocOp ($Padding optional) $PHRASE) (JoinFn forward betaReduce))
+# (rule $Location ($LocOp ($Padding optional) $PHRASE) (JoinFn forward betaReduce))
+(rule $Location ($LocOp ($Padding optional) $SimpleNounPhrase) (JoinFn forward betaReduce))
 
 # ---------		Comparison rules 			------------
-(rule $Comparator (more than) (ConstantFn (string ">")))
-(rule $Comparator (less than) (ConstantFn (string "<")))
+(rule $ComparatorOp (more than) (ConstantFn (string ">")))
+(rule $ComparatorOp (less than) (ConstantFn (string "<")))
+# (rule $CompareEntity ($Number) (IdentityFn))
+
 
 # rated more than 3.4
-(rule $Comparison ($Verb $Comparator $Number) 
+(rule $Comparison ($Verb $ComparatorOp $Number) 
     (lambda x 
         (lambda y 
             (lambda z
                 (
                     call + (string "where:binary(")  (var x)  (string ", ") (var y) (string ", ") (var z) (string ")") 
                 )
-            )
-                
-        ) 
-    )
+    )))
 )
 
 # with more than 4.4 stars
-(rule $Comparison (($Prep optional) $Comparator $Number $SimpleNounPhrase) 
-    (lambda x 
-        (lambda z
-            (lambda y
+(rule $Comparison (($Prep optional) $ComparatorOp $Number $SimpleNounPhrase) 
+    (lambda x (lambda z (lambda y
                 (
                     call + (string "where:binary(")  (var x)  (string ", ") (var y) (string ", ") (var z) (string ")") 
                 )
-            )
-                
-        ) 
-    )
+    )))
 )
 
 # ---------         Root rules              ------------
