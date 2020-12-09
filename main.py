@@ -106,21 +106,39 @@ def yelp_q1():
     # # Sketch: 
     # #   - select:select(moroccan restaurant), where:location(Texas)
     sketches = []
+    solution = "SELECT name FROM business JOIN category ON (business.bid = category.id) WHERE category.category_name = 'Moroccan';"
     print("Yelp Query 1: Give me all the moroccan restaurants in Texas")
+    print(f"Yelp Query 1 Golden Solution: {solution}")
+    
 
     p = Projection(
         Selection(
-            Table(hint=Hint(["restaurant"])),
+            Table(hint=Hint(["business"])),
             Predicate(operators.and_, 
-                Predicate(operators.eq, Column(hint=Hint("State")), Value("Texas") ),
-                Predicate(operators.eq, Column(hint=Hint("Category")), Value("moroccan"))
+                Predicate(operators.eq, Column(hint=Hint("state")), Value("Texas") ),
+                Predicate(operators.eq, Column(hint=Hint("category_name")), Value("Moroccan"))
             )
         ),
         AbstractColumns(
-            Column(hint=Hint(["restaurant"]))
+            Column(hint=Hint(["name"]))
         )
     )
     sketches.append(p)
+
+    # p = Projection(
+    #     Selection(
+    #         # Table(hint=Hint(["restaurant"])),
+    #         Table(hint=Hint(["business"])),
+    #         Predicate(operators.and_, 
+    #             Predicate(operators.eq, Column(hint=Hint("State")), Value("Texas") ),
+    #             Predicate(operators.eq, Column(hint=Hint("Category")), Value("Moroccan"))
+    #         )
+    #     ),
+    #     AbstractColumns(
+    #         Column(hint=Hint(["name"]))
+    #     )
+    # )
+    # sketches.append(p)
 
     # p = Projection(
     #     Selection(
@@ -155,7 +173,7 @@ def main():
     for q in queries:
         sketches = q()
         for p in sketches:
-            print(f"Sketch: {p}")
+            print(f"Initial Sketch: {p}")
 
             start = time.time()
             res = synthesis(p)
@@ -171,4 +189,5 @@ def main():
 
 if __name__ == '__main__':
     # main_demo_mas()
+
     main()
