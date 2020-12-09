@@ -3,7 +3,7 @@ import os
 from database.table import pushDatabase, popDatabase, getDatabase
 from query.type import boolean, numeric, string
 
-def LoadDatabase(path, db_name=None):
+def LoadDatabase(path, db_name=None, fk_pk_list=None):
     conn = sqlite3.connect(path)
     cur = conn.cursor()
     schema = cur.execute('SELECT tbl_name FROM sqlite_master WHERE type = "table"')
@@ -11,12 +11,11 @@ def LoadDatabase(path, db_name=None):
         db_name = os.path.basename(path)
     pushDatabase(db_name, conn)
     db = getDatabase()
-    foreign_refs = [] # (primary table name, primary column name, foreign table name, foreign column name)
+    foreign_refs = fk_pk_list or [] # (primary table name, primary column name, foreign table name, foreign column name)
     table_names = [i[0] for i in schema.fetchall()]
 
     # Filter some non-tables
-    filtered_list = ["sqlite_sequence"]
-    table_names = [i for i in table_names if i not in filtered_list]
+    table_names = [i for i in table_names if "sqlite" not in i]
 
     for tbl_name in table_names:
         db.add_table(tbl_name)

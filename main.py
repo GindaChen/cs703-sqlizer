@@ -167,7 +167,19 @@ def yelp_q1():
 
 def main():
     db_path = "yelp.db"
-    LoadDatabase(db_path)
+
+    fk_pk_list = [        
+        # (primary table name, primary column name, foreign table name, foreign column name)
+        ("business", "business_id", "category", "business_id"),
+        ("business", "business_id", "checkin", "business_id"),
+        ("business", "business_id", "neighborhood", "business_id"),
+        ("business", "business_id", "review", "business_id"),
+        ("business", "business_id", "tip", "business_id"),
+
+        ("user", "user_id", "tip", "user_id"),
+        ("user", "user_id", "review", "user_id"),
+    ] 
+    LoadDatabase(db_path, fk_pk_list=fk_pk_list)
 
     queries = [yelp_q1]
     for q in queries:
