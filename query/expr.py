@@ -141,7 +141,7 @@ class Value(Entity):
         super().__init__()
         if isinstance(val, bool):
             self.type = boolean
-        elif isinstance(val, int):
+        elif isinstance(val, (int, float)):
             self.type = numeric
         elif isinstance(val, str):
             self.type = string
