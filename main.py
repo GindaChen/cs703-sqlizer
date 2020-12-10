@@ -63,10 +63,9 @@ def synthesis(query: AbstractTable, depth=3) -> List[BaseSketchCompl]:
 
     for sketch in sketches[:top_k]:
         print(sketch.confid, repr(query.unparse(sketch_compl=sketch)))
-        res = fault_localize(query, sketch)
-        if res is None:
+        expr = fault_localize(sketch, query)
+        if expr is None:
             break
-        expr, _ = res
         repaired_exprs = repair_sketch(expr)
         for repaired_expr in repaired_exprs:
             new_query = substitute(query, expr, repaired_expr)
@@ -103,18 +102,18 @@ def main_demo_mas():
 def yelp_q1():
     # # Query 1:
     # # Give me all the moroccan restaurants in Texas
-    # # Sketch: 
+    # # Sketch:
     # #   - select:select(moroccan restaurant), where:location(Texas)
     sketches = []
     solution = "SELECT name FROM business JOIN category ON (business.bid = category.id) WHERE category.category_name = 'Moroccan';"
     print("Yelp Query 1: Give me all the moroccan restaurants in Texas")
     print(f"Yelp Query 1 Golden Solution: {solution}")
-    
+
 
     p = Projection(
         Selection(
             Table(hint=Hint(["business"])),
-            Predicate(operators.and_, 
+            Predicate(operators.and_,
                 Predicate(operators.eq, Column(hint=Hint("state")), Value("Texas") ),
                 Predicate(operators.eq, Column(hint=Hint("category_name")), Value("Moroccan"))
             )
@@ -129,7 +128,7 @@ def yelp_q1():
     #     Selection(
     #         # Table(hint=Hint(["restaurant"])),
     #         Table(hint=Hint(["business"])),
-    #         Predicate(operators.and_, 
+    #         Predicate(operators.and_,
     #             Predicate(operators.eq, Column(hint=Hint("State")), Value("Texas") ),
     #             Predicate(operators.eq, Column(hint=Hint("Category")), Value("Moroccan"))
     #         )
@@ -168,7 +167,7 @@ def yelp_q1():
 def main():
     db_path = "yelp.db"
 
-    fk_pk_list = [        
+    fk_pk_list = [
         # (primary table name, primary column name, foreign table name, foreign column name)
         ("business", "business_id", "category", "business_id"),
         ("business", "business_id", "checkin", "business_id"),
@@ -178,7 +177,7 @@ def main():
 
         ("user", "user_id", "tip", "user_id"),
         ("user", "user_id", "review", "user_id"),
-    ] 
+    ]
     LoadDatabase(db_path, fk_pk_list=fk_pk_list)
 
     queries = [yelp_q1]
@@ -200,6 +199,6 @@ def main():
 
 
 if __name__ == '__main__':
-    # main_demo_mas()
+    main_demo_mas()
 
-    main()
+    # main()

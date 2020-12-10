@@ -1,6 +1,6 @@
 # Repair tactics implementation
 # Basically some modification to AST node
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Optional
 
 from query import operators, params
 from query.base import BaseExpr, Hint
@@ -137,15 +137,16 @@ def can_repair(expr: BaseExpr):
     return len(repair_sketch(expr)) != 0
 
 
-def get_sub_relations(expr: BaseExpr, sketch: ComposeSketchCompl):
+def get_sub_relations(sketch: ComposeSketchCompl):
+    expr = sketch.expr
     if isinstance(expr, Selection):
-        return [(expr.abs_table, expr.pred, sketch.getSubCompl(0), sketch.getSubCompl(1))]
+        return [(sketch.getSubCompl(0), sketch.getSubCompl(1))]
     if isinstance(expr, Projection):
-        return [(expr.abs_table, expr.abs_cols, sketch.getSubCompl(0), sketch.getSubCompl(1))]
+        return [(sketch.getSubCompl(0), sketch.getSubCompl(1))]
     if isinstance(expr, Join):
         return [
-            (expr.lhs_abs_table, expr.lhs_col, sketch.getSubCompl(0), sketch.getSubCompl(2)),
-            (expr.rhs_abs_table, expr.rhs_col, sketch.getSubCompl(1), sketch.getSubCompl(3)),
+            (sketch.getSubCompl(0), sketch.getSubCompl(2)),
+            (sketch.getSubCompl(1), sketch.getSubCompl(3)),
         ]
 
 
@@ -156,48 +157,51 @@ def get_sub_specifiers(expr: BaseExpr):
         return [expr.agg.col, expr.by_col]
 
 
-def fault_localize(expr: BaseExpr, sketch: ComposeSketchCompl) -> Union[Tuple[BaseExpr, ComposeSketchCompl], None]:
+def fault_localize(sketch_compl: ComposeSketchCompl, sketch: BaseExpr = None) -> Optional[BaseExpr]:
+    if sketch is None:
+        sketch = sketch_compl.expr
+
     # line 4: if expr is a relation
-    if isinstance(expr, (Selection, Projection, Join)):
+    if isinstance(sketch, (Selection, Projection, Join)):
 
         # line 5
-        sub_relations = get_sub_relations(expr, sketch)
-        for relation, specifier, relation_sketch, specifier_sketch in sub_relations:
+        sub_relations = get_sub_relations(sketch_compl)
+        for sub_relation_compl, sub_specifier_compl in sub_relations:
 
             # line 6 - 7
-            res = fault_localize(relation, relation_sketch)
-            if res is not None:
-                return res
+            faulty_sub_sketch = fault_localize(sub_relation_compl)
+            if faulty_sub_sketch is not None:
+                return faulty_sub_sketch
 
             # line 8: `getCandidates` is called `FindInhabitants` in the algorithm
-            candidates = relation.getCandidates()
+            candidates = sub_relation_compl.expr.getCandidates()
             # line 9 - 10
-            omega = [fault_localize(specifier, s) for s in candidates]
+            omega = [fault_localize(s, sub_specifier_compl.expr) for s in candidates]
 
             # line 11: the specifier is faulty if its faulty for all possible inhabitants
             if all(e is not None for e in omega):
                 if len(set(omega)) == 1:
                     return omega[0]
-                elif can_repair(specifier):
-                    return specifier, specifier_sketch
+                elif can_repair(sub_specifier_compl.expr):
+                    return sub_specifier_compl.expr
 
     # line 14 - 17: if expr is a specifier, we recurse down to its sub_specifiers
-    elif isinstance(expr, (Predicate, GroupAgg)):
-        sub_specifiers = get_sub_specifiers(expr)
-        for specifier in sub_specifiers:
-            res = fault_localize(specifier, sketch)
-            if res is not None:
-                return res
+    elif isinstance(sketch, (Predicate, GroupAgg)):
+        sub_specifiers = get_sub_specifiers(sketch)
+        for sub_specifier in sub_specifiers:
+            faulty_sub_sketch = fault_localize(sketch_compl, sub_specifier)
+            if faulty_sub_sketch is not None:
+                return faulty_sub_sketch
 
     # line 18: we consider the current sketch as the possible cause of failure
-    sub_sketches = expr.getCandidates(
-        type_check=None if isinstance(expr, (Selection, Projection, Join, Table)) else sketch.type_check
+    sub_sketches = sketch.getCandidates(
+        type_check=None if isinstance(sketch, (Selection, Projection, Join, Table)) else sketch_compl.type_check
     )
 
     if (
         max((s.confid.score for s in sub_sketches), default=-1) < params.confid_threshold and
-        can_repair(expr)
+        can_repair(sketch)
     ):
-        return expr, sketch
+        return sketch
 
     return None
