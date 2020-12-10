@@ -101,6 +101,12 @@ def main_demo_mas():
     CloseDatabase()
 
 
+def NotSupported(x):
+    def foo():
+        raise Exception(f"This query is not supported: {x}")
+    return foo
+    
+
 def yelp_q1():
     """
     Query 1:
@@ -192,6 +198,7 @@ def yelp_q3():
     """
     Comments = """
     - Fuzzy match: The "preschool" is tokenized by frontend such that it does not exactly match the entry "Preschools" in the table.
+    - Word2Vec plural has some trouble: There can be a huge difference between `preschool` and `preschools`. This is due to the word2vec components.
     - Entity misplaced: Preschool is a category instead of a entry. 
     - Madison is a city, but there are many columns that contains geographic information (state, city, address, etc). 
     """
@@ -212,21 +219,58 @@ def yelp_q3():
     # )
     # sketches.append(p)
 
-    p = Projection(
-        Selection(
-            Table(hint=Hint(["business"])),
-            Predicate(operators.and_, 
-                Predicate(operators.eq, Column(hint=Hint("city")), Value("Madison")),
-                Predicate(operators.eq, Column(hint=Hint("category_name")), Value("Preschools")),
-            )
-        ),
-        AbstractColumns(
-            # Aggregation(operators.count_, Column(hint=Hint("preschool")))
-            Aggregation(operators.count_, Column(hint=Hint("name")))
-        )
-    )
-    sketches.append(p)
+    # # [Sketch success!]
+    # p = Projection(
+    #     Selection(
+    #         Table(hint=Hint(["business"])),
+    #         Predicate(operators.and_, 
+    #             Predicate(operators.eq, Column(hint=Hint("city")), Value("Madison")),
+    #             Predicate(operators.eq, Column(hint=Hint("category_name")), Value("Preschools")),
+    #         )
+    #     ),
+    #     AbstractColumns(
+    #         # Aggregation(operators.count_, Column(hint=Hint("preschool")))
+    #         Aggregation(operators.count_, Column(hint=Hint("name")))
+    #     )
+    # )
+    # sketches.append(p)
+
+    # # [Sketch failed...] 
+    # # The word2vec wilil do a casefold first
+    # p = Projection(
+    #     Selection(
+    #         Table(hint=Hint(["business"])),
+    #         Predicate(operators.and_, 
+    #             Predicate(operators.eq, Column(hint=Hint("city")), Value("Madison")),
+    #             Predicate(operators.eq, Column(hint=Hint("category_name")), Value("preschool")),
+    #         )
+    #     ),
+    #     AbstractColumns(
+    #         # Aggregation(operators.count_, Column(hint=Hint("preschool")))
+    #         Aggregation(operators.count_, Column(hint=Hint("name")))
+    #     )
+    # )
+    # sketches.append(p)
+
+    # # [Sketch failed...] 
+    # # The SQL query direct executes on the database, and cannot have fuzzy match over the `Preschool` with a capital `P`
+    # p = Projection(
+    #     Selection(
+    #         Table(hint=Hint(["business"])),
+    #         Predicate(operators.and_, 
+    #             Predicate(operators.eq, Column(hint=Hint("city")), Value("Madison")),
+    #             Predicate(operators.eq, Column(hint=Hint("category_name")), Value("Preschool")),
+    #         )
+    #     ),
+    #     AbstractColumns(
+    #         # Aggregation(operators.count_, Column(hint=Hint("preschool")))
+    #         Aggregation(operators.count_, Column(hint=Hint("name")))
+    #     )
+    # )
+    # sketches.append(p)
+
     return sketches
+
 
 
 
@@ -236,24 +280,22 @@ def yelp_q4():
     literal_top_sketch = "select:select(restaurant), where:binary(rate, >, 3.5)"
     utterance = "List all the restaurants rated more than 3.5"
     solution = """
-    SELECT business.name FROM business 
-    JOIN category ON (business.business_id = review.business_id)
-    WHERE review.rating > 3.5;
+    SELECT business.name FROM business WHERE business.rating > 3.5;
     """
     Comments = """
-    - Fuzzy match `rate`: the original column name is `rating`.
+    - Word2Vec Fuzzy match `rate`: the original column name is `rating`.
+    - Don't do a join when you can find all columns in the same table: rating is also in the review table, but we didn't need to use it because that is also in the business table.
     """
 
     print(f"{query_identifier} Utterance: {utterance}")
     print(f"{query_identifier} Golden Solution: {solution}")
-
     
     p = Projection(
         Selection(
             Table(hint=Hint(["business"])),
-            Predicate(operators.and_, 
+            # Predicate(operators.and_, 
                 Predicate(operators.gt, Column(hint=Hint("rate")), Value(3.5)),
-            )
+            # )
         ),
         AbstractColumns(
             # Column(hint=Hint(["restaurant"]))
@@ -264,6 +306,132 @@ def yelp_q4():
     return sketches
 
 
+def yelp_q5():
+    query_identifier = "Yelp 5"
+    sketches = []
+    literal_top_sketch = "select:select(business), where:binary(>, star, 4.5)"
+    utterance = "List all the businesses with more than 4.5 stars"
+    solution = """
+    SELECT business.name FROM business WHERE business.rating > 3.5;
+    """
+    Comments = """
+    - [Semantic Parser] Recognie the phrase `4.5 stars` should become a predicate. This is testing the flexiblity of the grammar.
+    """
+
+    print(f"{query_identifier} Utterance: {utterance}")
+    print(f"{query_identifier} Golden Solution: {solution}")
+    
+    p = Projection(
+        Selection(
+            Table(hint=Hint(["business"])),
+            # Predicate(operators.and_, 
+                Predicate(operators.gt, Column(hint=Hint("rate")), Value(4.5)),
+            # )
+        ),
+        AbstractColumns(
+            # Column(hint=Hint(["restaurant"]))
+            Column(hint=Hint(["name"]))
+        )
+    )
+    sketches.append(p)
+    return sketches
+
+
+def yelp_q6():
+    query_identifier = "Yelp 6"
+    sketches = []
+    literal_top_sketch = "agg:count(restaurant), where:binary(rate, >, 3.5)"
+    utterance = "Find the number of restaurants rated more than 3.5"
+    solution = """
+    SELECT count(*) FROM business WHERE business.rating > 3.5;
+    """
+    Comments = """
+    - [Semantic Parser] Recognie the phrase `rated more than 3.5` should become a predicate between (rate, 3.5)
+    - [Word2Vec] Recognize the count() actually doesnot directly point to `restaurant` but actually a `count(*)`.
+    """
+
+    print(f"{query_identifier} Utterance: {utterance}")
+    print(f"{query_identifier} Golden Solution: {solution}")
+    
+    p = Projection(
+        Selection(
+            Table(hint=Hint(["business"])),
+            # Predicate(operators.and_, 
+                Predicate(operators.gt, Column(hint=Hint("rate")), Value(3.5)),
+            # )
+        ),
+        AbstractColumns(
+            # Column(hint=Hint(["restaurant"]))
+            Column(hint=Hint(["name"]))
+        )
+    )
+    sketches.append(p)
+    return sketches
+
+
+@NotSupported
+def yelp_q7():
+    query_identifier = "Yelp 7"
+    sketches = []
+    literal_top_sketch = "agg:count(review)" 
+    utterance = "Which Thai restaurant has the most number of reviews"
+    solution = """..."""
+    Comments = """
+    - Nested Query is not supported. This one is very difficult.
+    - `Having` is not supported in the backend.
+    """
+    pass
+
+@NotSupported
+def yelp_q8():
+    query_identifier = "Yelp 8"
+    sketches = []
+    literal_top_sketch = None
+    utterance = "find all cities which has a 'Taj Mahal' restaurant"
+    solution = """..."""
+    Comments = """
+    - Nested Query is not supported. This one uses the classic template 
+    - Intrinsic ambiguity: What is a 'Taj Mahal' restaurant? A category, or a business name?
+    """
+    pass
+
+
+
+def yelp_q9():
+    query_identifier = "Yelp 9"
+    
+    literal_top_sketch = "agg:count(checkin), where:location(Los Angeles)"
+    literal_top_sketch = [
+        '"agg:count(checkin), where:location(Los Angeles)"',
+        '"agg:count(checkin), where:location(Angeles)"',
+        '"where:location(where:kind(moroccan) restaurant), where:location(Los Angeles)"',
+        ...
+    ]
+    utterance = "find the total checkins in Moroccan restaurants in Los Angeles"
+    solution = """
+    SELECT count(*) FROM business WHERE business.rating > 3.5;
+    """
+    Comments = """
+    No feasible solution from semantic parser. Probably becuase the two consecutive `in`...
+    """
+
+    print(f"{query_identifier} Utterance: {utterance}")
+    print(f"{query_identifier} Golden Solution: {solution}")
+    
+    p = Projection(
+        Selection(
+            Table(hint=Hint(["business"])),
+            # Predicate(operators.and_, 
+                Predicate(operators.gt, Column(hint=Hint("rate")), Value(3.5)),
+            # )
+        ),
+        AbstractColumns(
+            # Column(hint=Hint(["restaurant"]))
+            Column(hint=Hint(["name"]))
+        )
+    )
+    sketches.append(p)
+    return sketches
 
 
 
@@ -285,7 +453,8 @@ def main():
 
     # queries = [yelp_q1]
     # queries = [yelp_q2]
-    queries = [yelp_q3]
+    # queries = [yelp_q3]
+    queries = [yelp_q5]
     for q in queries:
         sketches = q()
         for p in sketches:
