@@ -1,5 +1,5 @@
-import time
-
+import time, os
+import urllib.request
 from copy import copy
 from typing import List
 
@@ -448,7 +448,11 @@ def main():
 
         ("user", "user_id", "tip", "user_id"),
         ("user", "user_id", "review", "user_id"),
-    ] 
+    ]
+
+    if not os.path.exists(db_path):
+        urllib.request.urlretrieve("http://pages.cs.wisc.edu/~szhong/yelp.db", db_path)
+
     LoadDatabase(db_path, fk_pk_list=fk_pk_list)
 
     # queries = [yelp_q1]
