@@ -8,4 +8,4 @@ Preliminary Evaluation [link](https://tinyurl.com/y2sbba3n) (or the [original li
 
 ### Note
 
-We are still updating the instruction to download the dependencies in case some one wants to reproduce the result. See issue [#35] (https://github.com/GindaChen/cs703-sqlizer/issues/35) for detail
+We are still updating the instruction to download the dependencies in case some one wants to reproduce the result. See issue [#35](https://github.com/GindaChen/cs703-sqlizer/issues/35) for detail
