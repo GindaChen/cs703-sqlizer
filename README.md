@@ -1,4 +1,4 @@
-# Sqlizer
+# SQLizer (Replicate)
 
 CS703 Fall '20 Final Project: Replicate [SQLizer](https://www.cs.utexas.edu/users/isil/sqlizer.pdf).
 
